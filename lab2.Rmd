@@ -1,0 +1,56 @@
+---
+title: "Notes"
+output:
+  pdf_document: default
+  html_document: default
+date: "2024-01-31"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Tools for Checking the Validity of a Model
+
+#Residuals
+
+$$
+\hat{e}=Y-\hat{Y}=Y-X\hat{\beta},
+$$
+$$
+\hat{\beta}={(X'X)}^{-1}X'Y.
+$$
+#Leverage of points
+
+(1)Hat matrix:
+
+$$
+\hat{Y}=HY, \ H= X{(X'X)}^{-1}X'.
+$$
+(2)Note: $H'H=HH=H$.
+
+Identifying leverage points:
+
+Usually, the rule for identifying leverage points is $h_{ii}>2*average(h_{ii})=\frac{2*(p+1)}{n}$, where $h_{ii}$ denotes the $i^{th}$ diagonal element of $H$.
+
+
+
+#Standardized residuals
+
+$$
+r_i=\frac{\hat{e_i}}{s\sqrt{1-h_{ii}}},
+$$
+since $Var(\hat{e})=\sigma^2[1-H]$, $Var(\hat{e_i})=\sigma^2[1-h_{ii}]$.
+
+(1)Identifying outliers:
+
+Usually, the rule for identifying outliers is $r_{i}>2$ or $r_{i}<-2$.
+
+
+#Cook's Distance
+Consider both the location of the point in x space and the response variable in measuring influence.
+$$
+D_{i}  = \frac{1}{p} \left [ \frac{(y_{i}-\hat{y_{i} }  )}{\hat{\sigma  }(1-h_{ii} ) ^{1/2}  } \right ]^{2}\frac{h_{ii} }{1-h_{ii} }   
+$$
+(1)Usually points with $D_{i}>1$ are considered as influencial points.

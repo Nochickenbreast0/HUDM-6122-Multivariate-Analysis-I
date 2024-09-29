@@ -1,0 +1,308 @@
+---
+title: "Lab 9-1"
+output:
+  pdf_document: default
+  html_document: default
+date: "2024-04-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+6.3 Agglomerative hierarchical clustering
+
+
+1. In a hierarchical classification, the data are not partitioned into a particular number of classes or groups at a single step. Instead the classification consists of a series of partitions that may run from a single “cluster” containing all individuals to n clusters, each containing a single individual. 
+
+2. Agglomerative hierarchical clustering techniques produce partitions by a series of successive fusions of the n individuals into groups.
+
+3. With such methods, fusions, once made, are irreversible, so that when an agglomerative algorithm has placed two individuals in the same group they cannot subsequently appear in different groups.
+
+4. Since all agglomerative hierarchical techniques ultimately reduce the data to a single cluster containing all the individuals, the investigator seeking the solution with the best-fitting number of clusters will need to decide which division to choose.
+
+5. An agglomerative hierarchical clustering procedure produces a series of partitions of the data, $P_{n}, P_{n-1},..., P_{1}$. The first, $P_{n}$, consists of n singlemember clusters, and the last, $P_{1}$, consists of a single group containing all n individuals. 
+
+6. Clusters $C_{1}, C_{2},..., C_{n}$ each containing a single individual.
+(1) Find the nearest pair of distinct clusters, say $C_{i}$ and $C_{j}$, merge $C_{i}$ and $C_{j}$ , delete $C_{j}$ , and decrease the number of clusters by one.
+(2) If the number of clusters equals one, then stop; otherwise return to 1.
+
+7. Before the process can begin, an inter-individual distance matrix or similarity matrix needs to be calculated.
+$$
+d_{ij}=\sqrt{\sum_{k=1}^{q}(x_{ik}-x_{jk})^2}
+$$
+where $d_{ij}$ is the Euclidean distance between individual i with variable values $x_{i1}, x_{i2},..., x_{iq}$ and individual j with variable values $x_{j1}, x_{j2}, ... , x_{jq}$. 
+
+8. The Euclidean distances between each pair of individuals can be arranged in a matrix that is symmetric because $d_{ij} = d_{ji}$ and has zeros on the main diagonal. Such a matrix is the starting point of many clustering examples, although the calculation of Euclidean distances from the raw data may not be sensible when the variables are on very different scales. In such cases, the variables can be standardised in the usual way before calculating the distance matrix, although this can be unsatisfactory in some cases.
+
+9. Given an inter-individual distance matrix, the hierarchical clustering can begin, and at each stage in the process the methods fuse individuals or groups of individuals formed earlier that are closest (or most similar). So as groups are formed, the distance between an individual and a group containing several individuals and the distance between two groups of individuals will need to be calculated. How such distances are defined leads to a variety of different techniques. Two simple inter-group measures are 
+$$
+d_{AB} = \min_{\substack{i \in A \\ j \in B}} (d_{ij})
+$$
+
+$$
+d_{AB} = \max_{\substack{i \in A \\ j \in B}} (d_{ij}),
+$$
+
+where $d_{AB}$ is the distance between two clusters A and B, and $d_{ij}$ is the distance between individuals i and j found from the initial inter-individual distance matrix.
+
+10. The first inter-group distance measure above is the basis of single linkage clustering, the second that of complete linkage clustering. Both these techniques have the desirable property that they are invariant under monotone transformations of the original inter-individual distances; i.e., they only depend on the ranking on these distances, not their actual values.
+
+11. A further possibility for measuring inter-cluster distance or dissimilarity is
+$$
+d_{AB} = \frac{1}{n_A n_B} \sum_{i \in A} \sum_{j \in B} d_{ij}
+$$
+where $n_{A}$ and $n_{B}$ are the numbers of individuals in clusters A and B. This measure is the basis of a commonly used procedure known as group average clustering.
+
+Fig. 6.2. Inter-cluster distance measures.
+```{r}
+ measure <-
+ structure(list(V1 = 1:20, V2 = c(34L, 37L, 38L, 36L, 38L, 43L, 
+ 40L, 38L, 40L, 41L, 36L, 36L, 34L, 33L, 36L, 37L, 34L, 36L, 38L, 
+ 35L), V3 = c(30L, 32L, 30L, 33L, 29L, 32L, 33L, 30L, 30L, 32L, 
+ 24L, 25L, 24L, 22L, 26L, 26L, 25L, 26L, 28L, 23L), V4 = c(32L, 
+ 37L, 36L, 39L, 33L, 38L, 42L, 40L, 37L, 39L, 35L, 37L, 37L, 34L, 
+ 38L, 37L, 38L, 37L, 40L, 35L)), .Names = c("V1", "V2", "V3", 
+ "V4"), class = "data.frame", row.names = c(NA, -20L))
+
+measure <- measure[,-1]
+
+names(measure) <- c("chest", "waist", "hips")
+
+measure$gender <- gl(2, 10)
+
+levels(measure$gender) <- c("male", "female")
+```
+
+```{r}
+set.seed(29)
+
+x1 <- c(0.7, 0.8, 0.85, 0.9, 1.1, 1, 0.95)
+
+x <- c(x1, x1 + 1.5)
+
+y1 <- sample(x1)
+
+y <- c(y1, y1 + 1)
+
+plot(x, y, main = "single")
+
+lines(c(1, 0.7 + 1.5), c(1.1, 0.7 + 1), col = "grey")
+
+```
+
+```{r}
+set.seed(29)
+
+x1 <- c(0.7, 0.8, 0.85, 0.9, 1.1, 1, 0.95)
+
+x <- c(x1, x1 + 1.5)
+
+y1 <- sample(x1)    
+
+y <- c(y1, y1 + 1)
+
+plot(x, y, main = "complete")
+
+lines(c(0.7, 2.5), c(0.7, 1.1 + 1), col = "grey")
+
+```
+
+```{r}
+set.seed(29)
+
+x1 <- c(0.7, 0.8, 0.85, 0.9, 1.1, 1, 0.95)
+
+x <- c(x1, x1 + 1.5)
+
+y1 <- sample(x1)    
+
+y <- c(y1, y1 + 1)
+
+plot(x, y, main = "average")
+
+for (i in 1:7) {
+     for (j in 8:14) lines(x[c(i, j)], y[c(i, j)], col = rgb(0.1, 0.1, 0.1, 0.1))
+ }
+```
+Findings:
+1. Single Linkage Clustering Plot: This plot shows that clusters are formed by connecting the nearest points in different clusters. The lines (which represent potential cluster connections) tend to be longer as they reach for the closest point, even if it's farther away from the main cluster. This can lead to the “chaining effect,” where clusters can stretch out to include points that are not as centrally located.
+
+2. Complete Linkage Clustering Plot: The plot indicates that clusters are formed by connecting the farthest points (the "complete" link). The lines connect the points that are furthest apart within their respective clusters. This generally results in more compact and better-separated clusters compared to single linkage, as seen by the shorter and more uniform connection lines between points.
+
+3. Average Linkage Clustering Plot: In this plot, clusters are formed based on the average distance between all points in two clusters. The lines connecting points show the connections made when considering the average distance. This method usually provides a balance between the sensitivity of single linkage to outliers and the compactness of complete linkage, resulting in more balanced clusters. The greyscale of the lines may represent the sequence of clustering or the density of connections (with darker lines indicating more connections).
+
+12. Hierarchical classifications may be represented by a two-dimensional diagram known as a dendrogram, which illustrates the fusions made at each stage of the analysis.
+
+Fig. 6.3. Darwin’s Tree of Life.
+An example of such a diagram is given in Figure 6.3. The structure of Figure 6.3 resembles an evolutionary tree, a concept introduced by Darwin under the term “Tree of Life” in his book On the Origin of Species by Natural Selection in 1859, and it is in biological applications that hierarchical classifications are most relevant and most justified (although this type of clustering has also been used in many other areas).
+```{r}
+library(knitr)
+include_graphics("E:/HUDM 6122/evolutionary tree.png")
+```
+
+
+As a first example of the application of the three clustering methods, single linkage, complete linkage, and group average, each will be applied to the chest, waist, and hip measurements of 20 individuals given in Chapter 1, Table 1.2. First Euclidean distances are calculated on the unstandardised measurements
+using the following R code:
+```{r}
+(dm <- dist(measure[, c("chest", "waist", "hips")]))
+```
+
+Application of each of the three clustering methods described earlier to the distance matrix and a plot of the corresponding dendrogram are achieved using the hclust() function:
+
+Fig. 6.4. Cluster solutions for measure data. The top row gives the cluster dendrograms along with the cutoff used to derive the classes presented (in the space of the first two principal components) in the bottom row.
+```{r}
+plot(cs <- hclust(dm, method = "single"))
+
+plot(cc <- hclust(dm, method = "complete"))
+
+plot(ca <- hclust(dm, method = "average"))
+```
+
+```{r}
+body_pc <- princomp(dm, cor = TRUE)
+
+layout(matrix(1:6, nr = 2), height = c(2, 1))
+
+plot(cs <- hclust(dm, method = "single"), main = "Single")
+
+abline(h = 3.8, col = "lightgrey")
+
+xlim <- range(body_pc$scores[,1])
+
+plot(body_pc$scores[,1:2], type = "n", xlim = xlim, ylim = xlim,
+      xlab = "PC1", ylab = "PC2")
+
+lab <- cutree(cs, h = 3.8)
+
+text(body_pc$scores[,1:2], labels = lab, cex=0.6)
+
+plot(cc <- hclust(dm, method = "complete"), main = "Complete")
+
+abline(h = 10, col = "lightgrey")
+
+plot(body_pc$scores[,1:2], type = "n", xlim = xlim, ylim = xlim,
+      xlab = "PC1", ylab = "PC2")
+
+lab <- cutree(cc, h = 10)  
+
+text(body_pc$scores[,1:2], labels = lab, cex=0.6)     
+
+plot(ca <- hclust(dm, method = "average"), main = "Average")
+
+abline(h = 7.8, col = "lightgrey")
+
+plot(body_pc$scores[,1:2], type = "n", xlim = xlim, ylim = xlim,
+      xlab = "PC1", ylab = "PC2")
+
+lab <- cutree(ca, h = 7.8)  
+#Uses cutree to cut the dendrogram at the specified height and obtain cluster labels.
+
+text(body_pc$scores[,1:2], labels = lab, cex=0.6)     
+
+```
+Interpretations:
+The PCA scatter plots visualize the data points in the space defined by the first two principal components (PC1 and PC2), with labels indicating the cluster membership based on the cut-off height in the respective dendrogram.
+1. In all three scatter plots, points that are close together belong to the same cluster, with numbers indicating cluster labels.
+
+2. The variation of points along PC1 and PC2 shows how the data points are spread out in the space of the first two principal components.
+
+3. The clustering labels on the PCA plots are based on the hierarchical clustering structure depicted in the dendrograms above them.
+
+We now need to consider how we select specific partitions of the data (i.e., a solution with a particular number of groups) from these dendrograms. The answer is that we “cut” the dendrogram at some height and this will give a partition with a particular number of groups. How do we choose where to cut or, in other words, how do we decide on a particular number of groups that is, in some sense, optimal for the data? One informal approach is to examine the sizes of the changes in height in the dendrogram and take a “large” change to indicate the appropriate number of clusters for the data. Even using this informal approach on the dendrograms in Figure 6.4, it is not easy to decide where to “cut”.
+
+So instead, because we know that these data consist of measurements on ten men and ten women, we will look at the two-group solutions from each method that are obtained by cutting the dendrograms at suitable heights. We
+can display and compare the three solutions graphically by plotting the first two principal component scores of the data, labelling the points to identify the cluster solution of one of the methods.
+
+The plot associated with the single linkage solution immediately demonstrates one of the problems with using this method in practise, and that is a phenomenon known as chaining, which refers to the tendency to incorporate intermediate points between clusters into an existing cluster rather than initiating a new one. As a result, single linkage solutions often contain long “straggly” clusters that do not give a useful description of the data. The two-group solutions from complete linkage and average linkage, also shown in Figure 6.4, are similar and in essence place the men (observations 1 to 10) together in one cluster and the women (observations 11 to 20) in the other.
+
+
+6.3.1 Clustering jet fighters
+The data shown in Table 6.1 as originally given in Stanley and Miller (1979) and also in Hand et al. (1994) are the values of six variables for 22 US fighter aircraft. The variables are as follows:
+FFD: first flight date, in months after January 1940;
+SPR: specific power, proportional to power per unit weight;
+RGF: flight range factor;
+PLF: payload as a fraction of gross weight of aircraft;
+SLF: sustained load factor;
+CAR: a binary variable that takes the value 1 if the aircraft can land on a
+carrier and 0 otherwise.
+```{r}
+jet <-
+ structure(list(V1 = c(82L, 89L, 101L, 107L, 115L, 122L, 127L,
+ 137L, 147L, 166L, 174L, 175L, 177L, 184L, 187L, 189L, 194L, 197L,
+ 201L, 204L, 255L, 328L), V2 = c(1.468, 1.605, 2.168, 2.054, 2.467,
+ 1.294, 2.183, 2.426, 2.607, 4.567, 4.588, 3.618, 5.855, 2.898,
+ 3.88, 0.455, 8.088, 6.502, 6.081, 7.105, 8.548, 6.321), V3 = c(3.3,
+ 3.64, 4.87, 4.72, 4.11, 3.75, 3.97, 4.65, 3.84, 4.92, 3.82, 4.32,
+ 4.53, 4.48, 5.39, 4.99, 4.5, 5.2, 5.65, 5.4, 4.2, 6.45), V4 = c(0.166,
+ 0.154, 0.177, 0.275, 0.298, 0.15, 0, 0.117, 0.155, 0.138, 0.249,
+ 0.143, 0.172, 0.178, 0.101, 0.008, 0.251, 0.366, 0.106, 0.089,
+ 0.222, 0.187), V5 = c(0.1, 0.1, 2.9, 1.1, 1, 0.9, 2.4, 1.8, 2.3,
+ 3.2, 3.5, 2.8, 2.5, 3, 3, 2.64, 2.7, 2.9, 2.9, 3.2, 2.9, 2),
+     V6 = c(0L, 0L, 1L, 0L, 1L, 0L, 1L, 0L, 0L, 1L, 0L, 0L, 1L,
+     0L, 1L, 0L, 1L, 1L, 1L, 1L, 0L, 1L)), .Names = c("V1", "V2",
+ "V3", "V4", "V5", "V6"), class = "data.frame", row.names = c(NA,
+ -22L))                                                   
+
+colnames(jet) <- c("FFD", "SPR", "RGF", "PLF", "SLF", "CAR")
+
+rownames(jet) <- c("FH-1", "FJ-1", "F-86A", "F9F-2", "F-94A", "F3D-1", "F-89A",
+                    "XF10F-1", "F9F-6", "F-100A", "F4D-1", "F11F-1",
+                    "F-101A", "F3H-2", "F-102A", "F-8A", "F-104B",
+                    "F-105B", "YF-107A", "F-106A", "F-4B", "F-111A")
+
+jet$CAR <- factor(jet$CAR, labels = c("no", "yes"))
+```
+
+We shall apply complete linkage to the data but using only variables two to five. And given that the variables are on very different scales, we will standardize them to unit variance before clustering. The required R code for standardization and clustering is as follows:
+```{r}
+X <- scale(jet[, c("SPR", "RGF", "PLF", "SLF")],
+            center = FALSE, scale = TRUE) 
+#The scale function is used to standardize these columns 
+#so that they have a mean of 0 and a standard deviation of 1. 
+#Since center is set to FALSE, the mean will not be subtracted 
+#(which means the original means of the columns are preserved),
+#but because scale is set to TRUE, each column is divided by 
+#its standard deviation.
+
+dj <- dist(X)
+# The dist function calculates the distance matrix dj for the 
+#scaled data X. This distance matrix represents the pairwise 
+#distances between the rows of X, calculated using the default 
+#Euclidean distance.
+
+#Fig. 6.5. Hierarchical clustering (complete linkage) of jet data.
+plot(cc <- hclust(dj), main = "Jets clustering")
+
+cc
+```
+Interpretation:
+1. Structure: Each leaf (or node) at the bottom represents an individual jet. The y-axis ("Height") measures the dissimilarity or distance between clusters: the lower the height, the more similar the items; the higher the height, the more dissimilar.
+
+2. Clustering: The "branches" of the dendrogram represent the linkage of jets based on their similarities. Jets that are similar to each other are grouped together at lower heights, forming clusters. As you move up the y-axis, these clusters are further combined into larger clusters.
+
+3. Close Proximity: Jets that are linked at the lower heights are more similar to each other based on the selected features (like speed, range, payload capacity, etc., assuming that these are the features represented by "SPR", "RGF", "PLF", "SLF").
+
+Fig. 6.6. Hierarchical clustering (complete linkage) of jet data plotted in PCA space.
+```{r}
+pr <- prcomp(dj)$x[, 1:2]
+# Principal components are computed on the distance matrix 
+#dj using the prcomp function. The first two principal 
+#components are extracted for plotting.
+
+plot(pr, pch = (1:2)[cutree(cc, k = 2)],
+     col = c("black", "darkgrey")[jet$CAR], 
+     xlim = range(pr) * c(1, 1.5))
+
+legend("topright", col = c("black", "black", 
+                            "darkgrey", "darkgrey"), 
+        legend = c("1 / no", "2 / no", "1 / yes", "2 / yes"), 
+        pch = c(1:2, 1:2), title = "Cluster / CAR", bty = "n")
+
+```
+Interpretation of Data Distribution:
+1. Clusters: Points are grouped according to similarity. Points within the same cluster should be closer together, and different clusters should be more spread out.
+
+2. CAR Attribute: The attribute seems to be somewhat associated with the clustering, as indicated by the grouping of the "yes" and "no" labels within the clusters. For example, cluster 2 has both "yes" and "no" categories, but they are somewhat separated on the PC2 axis.
+
+3. Spread on Principal Components: The spread along PC1 and PC2 indicates the variability captured by each principal component. A wider spread along PC1 than PC2 would suggest that PC1 captures more variability.

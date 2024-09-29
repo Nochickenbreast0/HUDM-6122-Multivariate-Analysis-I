@@ -1,0 +1,650 @@
+---
+title: "Lab4-5"
+date: "2024-02-21"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+3.3 Finding the sample principal components
+
+1. The first principal component of the observations is that linear combination of the original variables whose sample variance is greatest amongst all  possible such linear combinations. 
+
+2. The second principal component is defined as that linear combination ofthe original variables that accounts for a maximal proportion of the remaining variance subject to being uncorrelated with the first principal component.
+
+3. A sensible constraint is to require that the sum of squares of the coefficients should take the value one.
+
+4. To find the coefficients defining the first principal component, we need to choose the elements of the vector $a_{1}$ so as to maximise the variance of $y_{1}$ subject to the sum of squares constraint, which can be written $a_{1}^{T}  a_{1} = 1$. The sample variance of $y_{1}$ that is a linear function of the x variables is given by $a_{1}^{T} S a_{1}$, where $S$ is the q × q sample covariance matrix of the x variables.
+
+5. To maximize a function of several variables subject to one or more constraints, the method of Lagrange multipliers is used. We simply state that the Lagrange multiplier approach leads to the solution that $a_{1}$ is the eigenvector or characteristic vector of the sample covariance matrix,$S$, corresponding to this matrix’s largest eigenvalue or characteristic root.
+
+6. $a_{j}^{T}  a_{j} = 1$,
+   $a_{j}^{T}  a_{i} = 0  (i<j)$
+
+7. If the q eigenvalues of S are denoted by $\lambda_{1} ,\lambda_{2} ,....,\lambda_{q},$ then by requiring that $a_{i}^{T}  a_{i} = 1$ it can be shown that the variance of the ith principal component is given by $\lambda_{i}$.
+
+8. The total variance of the q principal components will equal the total variance of the original variables so that $\sum_{i=1}^{q} \lambda _{i}=s_{1}^{2}+s_{2}^{2} +\dots +s_{q}^{2}$, where $s_{i}^{2}$ is the sample variance of xi. We can write this more concisely as $\sum_{i=1}^{q} \lambda _{i}=trace(S)$.
+
+9. Consequently, the jth principal component accounts for a proportion $P_{j}$ of the total variation of the original data, where $P_{j}=\frac{\lambda _{j} }{trace(S)}$.
+
+10. The first m principal components, where m < q account for a proportion $P^{(m)}$ of the total variation in the original data, where
+$P^{(m)}=\frac{\sum_{j=1}^{m}\lambda _{j} }{trace(S)}$.
+
+
+3.4 Should principal components be extracted from the covariance or the correlation matrix?
+
+e.g. Suppose the three variables in a multivariate data set are weight in pounds, height in feet, and age in years, but for some reason we would like our principal components expressed in ounces, inches, and decades. Intuitively two approaches seem feasible;
+1. Multiply the variables by 16, 12, and 1/10, respectively and then carry out a principal components analysis on the covariance matrix of the three variables.
+2. Carry out a principal components analysis on the covariance matrix of the original variables and then multiply the elements of the relevant component by 16, 12, and 1/10. Unfortunately, these two procedures do not generally lead to the same result.
+
+1. Principal components should only be extracted from the sample covariance matrix when all the original variables have roughly the same scale.
+
+2. But this is rare in practise and consequently, in practise, principal components are extracted from the correlation matrix of the variables, $R$. Extracting the components as the eigenvectors of $R$ is equivalent to calculating the principal components from the original variables after each has been standardised to have unit variance.
+
+3. It should be noted, however, that there is rarely any simple correspondence between the components derived from $S$ and those derived from $R$. And choosing to work with $R$ rather than with $S$ involves a definite but possibly arbitrary decision to make variables “equally important”.
+(The choice between using a correlation matrix and a covariance matrix depends on the context of the data and the objectives of the analysis. Both approaches have their uses, but the decision to use one over the other often hinges on the scale and nature of the variables involved)
+
+
+
+
+Codes: To demonstrate how the principal components of the covariance matrix of a data set can differ from the components extracted from the data’s correlation matrix.
+
+The data in this example consist of eight blood chemistry variables measured on 72 patients in a clinical trial.
+```{r}
+library(MVA)
+bc <- c(
+    0.290,           
+    0.202,  0.415,       
+   -0.055,  0.285,  0.419,       
+   -0.105, -0.376, -0.521, -0.877,      
+   -0.252, -0.349, -0.441, -0.076,  0.206,
+   -0.229, -0.164, -0.145,  0.023,  0.034,  0.192,
+    0.058, -0.129, -0.076, -0.131,  0.151,  0.077,  0.423)
+
+blood_sd <- c(rblood = 0.371, plate = 41.253,  wblood = 1.935,
+              neut = 0.077, lymph = 0.071, bilir = 4.037,
+              sodium = 2.732, potass = 0.297)
+
+blood_corr <- diag(length(blood_sd)) / 2
+
+blood_corr[upper.tri(blood_corr)] <- bc     
+
+blood_corr <- blood_corr + t(blood_corr)
+
+blood_cov <- blood_corr * outer(blood_sd, blood_sd, "*")
+
+blood_sd
+```
+There are considerable differences between these standard deviations.
+
+
+Apply principal components analysis to covariance matrix of the data
+```{r}
+blood_pcacov <- princomp(covmat = blood_cov)
+#The covmat argument indicates that princomp should use the provided covariance 
+#matrix blood_cov as the basis for the PCA rather than computing the covariance matrix from the data. 
+#This means that blood_cov is a pre-computed covariance matrix of some dataset 
+#concerning blood measurements or similar.
+
+summary(blood_pcacov, loadings = TRUE)
+#The loadings = TRUE argument means that the summary will also include the 
+#loadings (or eigenvectors), which tell you how much each original variable 
+#contributes to each principal component.
+
+
+
+
+```
+Standard Deviation: This indicates the amount of variability captured by each principal component. A higher standard deviation means that the component accounts for more variability in the data.
+
+Proportion of Variance: This is the fraction of the total variance in the data explained by each component. It is calculated by squaring the standard deviation of each component and dividing by the sum of all squared standard deviations.
+
+Cumulative Proportion: This shows the total variance accounted for by the first N components. It's useful for determining how many components you need to capture a certain proportion of the total variance in the data.
+
+Loadings:
+Loadings indicate how much each original variable contributes to each principal component. They are the coefficients of the linear combination of the original variables that make up the principal component. Here's a brief on how to interpret the loadings:
+
+For Comp.1, "plate" has the highest loading (0.999), which means this component is mostly a measure of "plate."
+Comp.2 seems to be heavily influenced by "bilir" due to its high negative loading (-0.961).
+Comp.3 seems to be heavily influenced by "sodium" due to its high negative loading (-0.979).
+Comp.4: Primarily influenced by "wblood" with a high loading of 0.981. 
+Comp.5: Primarily influenced by "rblood" with a high loading of 0.943. 
+Comp.6: Dominated by "potass" (potassium) with a high negative loading of -0.942.
+Comp.7: Dominated by "neut" with a loading of 0.758.
+Comp.8: Dominated by "lymph" with a loading of 0.760.
+
+
+Positive loadings indicate that the variable and the component vary in the same direction; as one increases, the other does too.
+Negative loadings indicate an inverse relationship; as the variable increases, the component decreases, or vice versa.
+A loading close to 1 or -1 indicates that the variable strongly influences the component.
+A loading close to 0 suggests that the variable has little influence on the component.
+
+
+
+Apply principal components analysis to correlation matrix of the data
+```{r}
+blood_pcacor <- princomp(covmat = blood_corr)
+summary(blood_pcacor, loadings = TRUE)
+```
+(The “blanks” in this output represent very small values.) Examining the results, we see that each of the principal components of the covariance matrix is largely dominated by a single variable, whereas those for the correlation matrix have moderate-sized coefficients on several of the variables.
+
+Consequently, the principal components from the covariance matrix simply reflect the order of the sizes of the variances of the observed variables. The results from the correlation matrix tell us, in particular, that a weighted contrast of the first four and last four variables is the linear function with the largest variance. This example illustrates that when variables are on very different scales or have very different variances, a principal components analysis of the data should be performed on the correlation matrix, not on the covariance matrix.
+
+
+3.8 Choosing the number of components
+1. The principal components analysis would have provided a highly parsimonious summary (reducing the dimensionality of the data from six to one) that might be useful in later analysis.
+
+2. The question we need to ask is how many components are needed to provide an adequate summary of a given data set.
+
+3. (1) Retain just enough components to explain some specified large percentage of the total variation of the original variables. Values between 70% and 90% are usually suggested, although smaller values might be appropriate as q or n, the sample size, increases;
+
+(2) Exclude those principal components whose eigenvalues are less than the average, $\sum_{i=1}^{q}\frac{\lambda _{i} }{q}$. Since $\sum_{i=1}^{q} \lambda _{i}=trace(S)$, the average eigenvalue is also the average variance of the original variables. This method then retains those components that account for more variance than the average for the observed variables;
+
+(3) On the basis of a number of simulation studies, Jolliffe(1972) proposed that a more appropriate procedure would be to exclude components extracted from a correlation matrix whose associated eigenvalues are less than 0.7;
+
+(4) Cattell (1966) suggests examination of the plot of the $\lambda _{i}$ against i, the socalled scree diagram. 
+
+(5) A modification of the scree digram described by Farmer (1971) is the logeigenvalue diagram consisting of a plot of $log(\lambda _{i} )$ against i.
+
+4. From 3.4, we find that the first four components account for nearly 80% of the total variance, but it takes a further two components to push this figure up to 90%. A cutoff of one for the eigenvalues leads to retaining three components, and with a cutoff of 0.7 four components are kept.
+
+
+Figure 3.1. Scree diagram and log-eigenvalue diagram for principal components of the correlation matrix of the blood chemistry data.
+```{r}
+par(mfrow=c(1,2))
+plot(blood_pcacor$sdev^2, xlab = "Component number",
+     ylab = "Component variance", type = "l", main = "Scree diagram")
+
+plot(log(blood_pcacor$sdev^2), xlab = "Component number",
+     ylab = "log(Component variance)", type="l",
+     main = "Log(eigenvalue) diagram")
+```
+
+Elbow Criterion: The point where the plot starts to level off ("elbow") indicates the number of components that provide a significant amount of information. In the plot, this appears to be at component number 3 or 4. After this point, the additional components do not contribute significantly to the explanation of the variance.
+
+Conclusion: The former plot may suggest four components, although this is fairly subjective, and the latter seems to be of little help here because it appears to indicate retaining seven components, hardly much of a dimensionality reduction.
+
+
+3.9 Calculating principal components scores
+1. If we decide that we need, say, m principal components to adequately represent our data (using one or another of the methods described in the previous section), then we will generally wish to calculate the scores on each of these components for each individual in our sample.
+
+2. If, for example, we have derived the components from the covariance matrix, $S$, then the m principal components scores for individual i with original $q*1$ vector of variable values $x_{i}$ are obtained as
+$y_{i1} =a_{1}^{T} x_{i}$
+$y_{i2} =a_{2}^{T} x_{i}$
+...
+$y_{im} =a_{m}^{T} x_{i}$
+
+3. If the components are derived from the correlation matrix, then $x_{i}$ would contain individual i’s standardized scores for each variable.(The correlation matrix standardizes the scale of variables so that no single variable will dominate the principal component analysis due to its variance.)
+
+4. Many investigators might prefer to have scores with mean zero and variance equal to unity. Such scores can be found as
+$z=\Lambda _{m}^{-1} A_{m}^{T}x$,
+where $\Lambda _{m}$ is an m × m diagonal matrix with $\lambda _{1}, \lambda _{2},...,\lambda _{m}$ on the main diagonal, 
+$A{m}=(a_{1} ,a_{2} ,...a_{m} )$,
+and x is the $q*1$ vector of standardized scores.
+
+Note: We should note here that the first m principal components scores are the same whether we retain all possible q components or just the first m. (This is because the scores for each component are calculated independently of whether other components are retained. In other words, the computation of the scores for the first  m components does not depend on the presence or absence of additional components beyond m.)
+
+
+3.10 Some examples of the application of principal components analysis
+3.10.1 Head lengths of first and second sons
+```{r}
+"headsize" <- matrix(c(191, 195, 181, 183, 176, 208, 189, 197, 188, 192, 179, 183, 174,                         190, 188, 163, 195, 186, 181, 175, 192, 174,
+                     176, 197, 190, 155, 149, 148, 153, 144, 157, 150, 159, 152, 150, 158,                      147, 150, 159, 151, 137, 155, 153,
+                     145, 140, 154, 143, 139, 167, 163, 179, 201, 185, 188, 171, 192, 190,                      189, 197, 187, 186, 174, 185, 195,
+                     187, 161, 183, 173, 182, 165, 185, 178, 176, 200, 187, 145, 152, 149,                      149, 142, 152, 149, 152, 159, 151,
+                     148, 147, 152, 157, 158, 130, 158, 148, 146, 137, 152, 147, 143, 158, 150), 
+                     nrow = 25, ncol = 4, dimnames = list(character(0), 
+                     c("head1", "breadth1", "head2", "breadth2")))
+
+x <- headsize
+
+headsize <- as.data.frame(headsize)
+
+headsize <- x
+
+head_dat <- headsize[, c("head1", "head2")]
+colMeans(head_dat)
+
+cov(head_dat)
+format(round(cov(head_dat), 2), nsmall = 2)
+
+```
+The principal components of these data, extracted from their covariance matrix, can be found using
+```{r}
+head_pca <- princomp(x = head_dat)
+head_pca
+
+```
+Standard Deviations: These are the standard deviations of the principal components that were extracted. In PCA, the standard deviation of a component is related to the square root of the eigenvalue associated with that component. The standard deviation indicates how much variance is captured by the component.
+
+Comp.1: The first component has a standard deviation of 12.7. Since the variance is the square of the standard deviation, this component explains $12.7^{2}$units of variance in the data.
+Comp.2: The second component has a standard deviation of 5.2, which corresponds to $5.2^{2}$ units of variance.
+
+```{r}
+print(summary(head_pca), loadings = TRUE)
+```
+and are $y_{1} =0.693x_{1} +0.721x_{2} \quad y_{2} =-0.721x_{1} +0.6931x_{2}$, 
+with variances 167.77 and 28.33. The first principal component accounts for a proportion 167.77/(167.77+28.33) = 0.86 of the total variance in the original variables.
+
+Note that the total variance of the principal components is 196.10, which as expected is equal to the total variance of the original variables, found by adding the relevant terms in the covariance matrix given earlier; i.e., 95.29 + 100.81 = 196.10.
+
+To calculate an individual’s score on a component, we simply multiply the variable values minus the appropriate mean by the loading for the variable and add these values over all variables.
+
+We can illustrate this calculation using the data for the first family, where the head length of the first son is 191 mm and for the second son 179 mm. The score for this family on the first principal component is calculated as
+0.693 · (191 − 185.72) + 0.721 · (179 − 183.84) = 0.169,
+and on the second component the score is
+−0.721 · (191 − 185.72) + 0.693 · (179 − 183.84) = −7.61.
+
+
+Fig. 3.2. Head length of first and second sons, showing axes corresponding to the
+principal components of the sample covariance matrix of the data.
+(plot the data showing the axes corresponding to the principal components.)
+```{r}
+a1 <- 183.84 - 0.721*185.72/0.693
+b1 <- 0.721/0.693
+a2 <- 183.84 - (-0.693*185.72/0.721)
+b2 <- -0.693/0.721
+plot(head_dat, xlab = "First sons head length (mm)",
+     ylab = "Second sons head length")
+abline(a1, b1)
+abline(a2, b2, lty = 2)
+```
+The first axis passes through the mean of the data and has slope 0.721/0.693, and the second axis also passes through the mean and has slope −0.693/0.721.
+
+
+
+Fig. 3.3. Plot of the first two principal component scores for the head size data.
+(plot the principal components scores)
+```{r}
+xlim <- range(head_pca$scores[,1])
+plot(head_pca$scores, xlim = xlim, ylim = xlim)
+```
+Each point in the plot corresponds to an observation (such as an individual or a case) in the original dataset.
+
+Spread of Data: The spread of the points along the Comp.1 axis indicates the variation of the data along the first principal component, and similarly for the Comp.2 axis. A wider spread along an axis suggests greater variance captured by that component.
+
+Clustering and Outliers: If there are any clusters, they may suggest groups of similar observations. Outliers, or points far from the others, may suggest data points that are very different from the rest of the dataset.
+
+
+
+3.10.2 Olympic heptathlon results
+
+```{r}
+data("heptathlon",package="HSAUR2")
+```
+
+
+```{r}
+heptathlon$hurdles <- with(heptathlon, max(hurdles)-hurdles)
+heptathlon$run200m <- with(heptathlon, max(run200m)-run200m)
+heptathlon$run800m <- with(heptathlon, max(run800m)-run800m)
+
+score <- which(colnames(heptathlon) == "score")
+round(cor(heptathlon[,-score]), 2)
+#This line is calculating the correlation matrix of the heptathlon data frame 
+#excluding the column identified by the score variable (hence the -score indexing). 
+```
+
+Fig. 3.4. Scatterplot matrix of the seven heptathlon events after transforming some
+variables so that for all events large values are indicative of a better performance.
+```{r}
+plot(heptathlon[,-score], pch = ".")
+```
+
+Conclusion: Examination of the correlation matrix shows that most pairs of events are positively correlated, some moderately (for example, high jump and shot) and others relatively highly (for example, high jump and hurdles). The exceptions to this general observation are the relationships between the javelin event and the others, where almost all the correlations are close to zero.
+
+One very clear observation in this plot is that for all events except the javelin there is an outlier who is very much poorer than the other athletes at these six events, and this is the competitor from Papua New Guinea (PNG), who finished last in the competition in terms of points scored. But surprisingly, in the scatterplots involving the javelin, it is this competitor who again stands out, but in this case she has the third highest value for the event. It might be sensible to look again at both the correlation matrix and the scatterplot matrix after removing the competitor from PNG
+
+```{r}
+heptathlon <- heptathlon[-grep("PNG", rownames(heptathlon)),]
+score <- which(colnames(heptathlon) == "score")
+round(cor(heptathlon[,-score]), 2)
+```
+```{r}
+plot(heptathlon[,-score], pch = ".", cex = 1.5)
+
+```
+Conclusion: Several of the correlations are changed to some degree from those shown before removal of the PNG competitor, particularly the correlations involving the javelin event, where the very small correlations between performances in this event and the others have increased considerably.
+
+
+
+```{r}
+heptathlon_pca <- prcomp(heptathlon[, -score], scale = TRUE)
+# The scale = TRUE parameter means that each variable will be standardized to have a mean 
+#of 0 and a standard deviation of 1 before the PCA is calculated. Standardizing variables 
+#is important in PCA when variables are measured on different scales.
+print(heptathlon_pca)
+```
+
+```{r}
+summary(heptathlon_pca)
+```
+
+
+
+```{r}
+a1 <- heptathlon_pca$rotation[,1]
+a1
+```
+Conclusion: We see that the hurdles and long jump events receive the highest weight but the javelin result is less important.
+
+
+we can apply the scale function to the data and multiply it with the loadings matrix in order to compute the first principal component score for each competitor
+```{r}
+#Method 1
+center <- heptathlon_pca$center
+scale <- heptathlon_pca$scale
+hm <- as.matrix(heptathlon[,-score])
+drop(scale(hm, center = center, scale = scale) %*%
+heptathlon_pca$rotation[,1])
+
+
+#Method 2
+predict(heptathlon_pca)[,1]
+```
+
+
+The first two components account for 75% of the variance. A barplot of each component’s variance (see Figure 3.6) shows how the first two components dominate.
+Fig. 3.6. Barplot of the variances explained by the principal components (with observations for PNG removed).
+```{r}
+plot(heptathlon_pca)
+```
+
+
+The correlation between the score given to each athlete by the standardscoring system used for the heptathlon and the first principal component score can be found from
+```{r}
+cor(heptathlon$score, heptathlon_pca$x[,1])
+```
+Conclusion: This implies that the first principal component is in good agreement with the score assigned to the athletes by official Olympic rules; a scatterplot of the official score and the first principal component is given in Figure 3.7. (The fact that the correlation is negative is unimportant here because of the arbitrariness of the signs of the coefficients defining the first principal component; it is the magnitude of the correlation that is important.)
+
+Fig. 3.7. Scatterplot of the score assigned to each athlete in 1988 and the first
+principal component.
+```{r}
+plot(heptathlon$score, heptathlon_pca$x[,1])
+```
+
+
+
+3.10.3 Air pollution in US cities
+Fig. 3.8. Scatterplot matrix of six variables in the air pollution data.
+```{r}
+data("USairpollution", package = "HSAUR2")
+panel.hist <- function(x, ...) {
+   usr <- par("usr"); on.exit(par(usr))
+   par(usr = c(usr[1:2], 0, 1.5) )
+   h <- hist(x, plot = FALSE)
+   breaks <- h$breaks; nB <- length(breaks)
+   y <- h$counts; y <- y/max(y)
+   rect(breaks[-nB], 0, breaks[-1], y, col="grey", ...)
+}
+#It uses the hist function with plot = FALSE to calculate histogram values without plotting 
+#them, then plots these values as rectangles (rect) on the pairs plot to create the #histogram effect
+
+#It's set up at the beginning of the function to make sure that the exit action is 
+#registered right away, which is particularly important if the function might exit unexpectedly  
+
+USairpollution$negtemp <- USairpollution$temp * (-1)
+USairpollution$temp <- NULL
+pairs(USairpollution[,-1], diag.panel = panel.hist,
+      pch = ".", cex = 1.5)
+#"USairpollution" dataset, excluding the last column 
+```
+```{r}
+usair_pca <- princomp(USairpollution[,-1], cor = TRUE)
+summary(usair_pca, loadings = TRUE)
+#The loadings = TRUE argument specifies that the loadings (or eigenvectors) should be #included in the summary output. Loadings are the coefficients of the linear combinations #that define each principal component in terms of the original variables.
+```
+Findings: 1. We see that the first three components all have variances (eigenvalues) greater than one and together account for almost 85% of the variance of the original variables. Scores on these three components might be used to graph the data with little loss of information.
+
+2. This requires examining the coefficients defining each component (in the output shown above, these are scaled so that their sums of squares equal unity–“blanks” indicate near zero values).
+
+3. We see that the first component might be regarded as some index of “quality of life”, w ith values indicating a relatively poor environment (in the authors’ opinion at least). The second component is largely concerned with a city’s rainfall having high coefficients for precip and predays and might be labelled as the “wet weather” component. Component three is essentially a contrast between precip and negtemp and will separate cities having high temperatures and high rainfall from those that are colder but drier. A suitable label might be simply “climate type”.
+
+
+Fig. 3.9. Bivariate boxplots of the first three principal components.
+```{r}
+pairs(usair_pca$scores[,1:3], ylim = c(-6, 4), xlim = c(-6, 4),
+ panel = function(x,y, ...) {
+ text(x, y, abbreviate(row.names(USairpollution)),
+ cex = 0.6)
+ bvbox(cbind(x,y), add = TRUE)
+  })
+
+#The abbreviate function is used to ensure that the text is not too long to fit in the plot.
+
+
+
+```
+Conclusion: The plot again demonstrates clearly that Chicago is an outlier and suggests that Phoenix and Philadelphia may also be suspects in this respect. Phoenix appears to offer the best quality of life (on the limited basis of the six variables recorded), and Buffalo is a city to avoid if you prefer a drier environment.
+
+
+
+We will now consider the main goal in the researcher’s mind when collecting the air pollution data, namely determining which of the climate and human ecology variables are the best predictors of the degree of air pollution in a city as measured by the sulphur dioxide content of the air. This question would normally be addressed by multiple linear regression, but there is a potential problem with applying this technique to the air pollution data, and that is the very high correlation between the manu and popul variables. We might, of course, deal with this problem by simply dropping either manu or popul, but here we will consider a possible alternative approach, and that is regressing the SO2 levels on the principal components derived from the six other variables in the data.
+
+
+Fig. 3.10. Sulphur dioxide concentration depending on principal components.
+```{r}
+out <- sapply(1:6, function(i) {
+   plot(USairpollution$SO2,usair_pca$scores[,i],
+   xlab = paste("PC", i, sep = ""),
+   ylab = "Sulphur dioxide concentration")
+  })
+
+```
+
+
+The first question we need to ask is “how many principal components should be used as explanatory variables in the regression?” The obvious answer to this question is to use the number of principal components that were identified as important in the original analysis; for example, those with eigenvalues greater than one.
+
+```{r}
+usair_reg <- lm(SO2 ~ usair_pca$scores,
+                data = USairpollution)
+summary(usair_reg)
+```
+Conclusion: Clearly, the first principal component score is the most predictive of sulphur dioxide concentration, but it is also clear that components with small variance do not necessarily have small correlations with the response.
+
+
+3.11 The biplot
+1. A biplot is a graphical representation of the information in an n × p data
+matrix.
+
+2. The “bi” reflects that the technique displays in a single diagram the variances and covariances of the variables and the distances between units. The technique is based on the singular value decomposition of a matrix.
+
+3. A biplot is a two-dimensional representation of a data matrix obtained from eigenvalues and eigenvectors of the covariance matrix and obtained as
+$X_{2} =(P_{1},P_{2})\begin{pmatrix}\sqrt{\lambda _{1} }   & 0\\ 0 &\sqrt{\lambda _{2} } \end{pmatrix}\begin{pmatrix}q_{1}^{T} \\q_{2}^{T} \end{pmatrix}$,
+where $X_{2}$ is the “rank two” approximation of the data matrix $X$, $\lambda _{1}$ and $\lambda _{2}$ are the first two eigenvalues of the matrix $nS$, and $q_{1}$ and $q_{2}$ are the corresponding eigenvectors. The vectors $p_{1}$ and $p_{2}$ are obtained as
+$p_{i}=\frac{1}{\sqrt{\lambda _{i} } }  X q_{i} ; i=1,2.$
+
+4. The biplot is the plot of the n rows of $\sqrt{n}(p_{1} ,p_{2})$ and the q rows of
+$n^{-1/2} (\sqrt{\lambda _{1} } \mathbf{q} _{1}, \sqrt{\lambda _{2} } \mathbf{q} _{2}  )$ represented as vectors. The distance between the points representing the units reflects the generalized distance between the units. the length of the vector from the origin to the coordinates representing a particular variable reflects the variance of that variable, and the correlation of two variables is reflected by the angle between the two corresponding vectors for the two variables–the smaller the angle, the greater the correlation.
+
+
+
+
+
+Fig. 3.11. Biplot of the (scaled) first two principal components (with observations
+for PNG removed).
+```{r}
+biplot(heptathlon_pca, col = c("gray", "black"))
+```
+Findings: It shows that the winner of the gold medal, Jackie Joyner-Kersee, accumulatesthe majority of her points from the three events long jump, hurdles, and 200 m. We can also see from the biplot that the results of the 200 m, the hurdles and the long jump are highly correlated, as are the results of the javelin and the high jump; the 800 m time has relatively small correlation with all the other events and is almost uncorrelated with the high jump and javelin results. The first component largely separates the competitors by their overall score, with the second indicating which are their best events; for example, John, Choubenkova, and Behmer are placed near the end of the vector, representing the 800 m event because this is, relatively speaking, the event in which they give their best performance. Similarly Yuping, Scheider, and Braun can be seen to do well in the high jump.
+
+
+
+
+3.12 Sample size for principal components analysis
+1. Intuitively, larger values of n should lead to more convincing results and make these results more generalizable.
+
+2. And indeed other authors, for example Gorsuch (1983) and Hatcher (1994), lean towards the ratio of the minimum value of n to q as being of greater importance and recommend at least 5:1.
+
+
+3.13 Canonical correlation analysis
+1. Principal components analysis considers interrelationships within a set of variables. But there are situations where the researcher may be interested in assessing the relationships between two sets of variables.
+
+e.g. In psychology, an investigator may measure a number of aptitude variables and a number of achievement variables on a sample of students and wish to say something about the relationship between “aptitude” and “achievement”.
+
+e.g. Krzanowski (1988) suggests an example in which an agronomist has taken, say, q1 measurements related to the yield of plants (e.g., height, dry weight, number of leaves) at each of n sites in a region and at the same time may have recorded q2 variables related to the weather conditions at these sites (e.g., average daily rainfall, humidity, hours of sunshine). The whole investigation thus consists of taking (q1 +q2) measurements on n units, and the question of interest is the measurement of the association between “yield” and “weather”. 
+
+2. One way to view canonical correlation analysis is as an extension of multiple regression where a single variable (the response) is related to a number of explanatory variables and the regression solution involves finding the linear combination of the explanatory variables that is most highly correlated with the response.
+
+3. In canonical correlation analysis where there is more than a single variable in each of the two sets, the objective is to find the linear functions of the variables in one set that maximally correlate with linear functions of variables in the other set. Extraction of the coefficients that define the required linear functions has similarities to the process of finding principal components.
+
+4. The purpose of canonical correlation analysis is to characterise the independent statistical relationships that exist between two sets of variables, $\mathbf{x }^{T}  = \left ( x_{1}  , x_{2},\dots , x_{q_{1}}  \right )$
+ and $\mathbf{y }^{T}  = \left ( y_{1}, y_{2},\dots , y_{q_{2} }  \right )$.
+ 
+5. The approach adopted in CCA is to take the association between x and y to be the
+largest correlation between two single variables, u1 and v1, derived from x and
+y, with $u_{1}$ being a linear combination of $x_{1} ,x_{2} ,...,x_{q_{1} }$ and $v_{1}$ being a linear
+combination of $y_{1} ,y_{2} ,...,y_{q_{2}}$. 
+
+6. But often a single pair of variables $(u_{1},v_{1})$ is not sufficient to quantify the association between the x and y variables, and we may need to consider some or all of s pairs $(u_{1},v_{1}), (u_{2},v_{2}),...,(u_{s},v_{s})$ to do this, where $s=min(q_{1},q_{2})$.
+
+7. Each $u_{i}$ is a linear combination of the variables in x, $u_{i}=\mathbf{a} _{i}^{T}\mathbf{x}$, and each $v_{i}$ is a linear combination of the variables y, $v_{i}=\mathbf{b} _{i}^{T}\mathbf{y}$, with the coefficients $(\mathbf{a}_{i},\mathbf{b}_{i})=(i=1\dots s)$ being chosen so that the $u_{i}$ and $v_{i}$ satisfy the following:
+(1) The $u_{i}$ are mutually uncorrelated; i.e., $Cov(u_{i},u_{j})=0\ \  for \ i\ne j$.
+(2) The $v_{i}$ are mutually uncorrelated; i.e., $Cov(v_{i},v_{j})=0\ \  for \ i\ne j$.
+(3) The correlation between $u_{i}$ and $v_{i}$ is $R_{i}$ for $i=1,...s$, where $R_{1}>R_{2}>...>R_{S}$. The $R_{i}$ are the canonical correlations.
+(4) The $u_{i}$ are uncorrelated with all $v_{j}$ except $v_{i}$; i.e., $Cov(u_{i},v_{j})=0\ \  for \ i\ne j$.
+
+
+8. The vectors $a_{i}$ and $b_{i} \  i=1,...s$, which define the required linear combinations of the x and y variables, are found as the eigenvectors of matrices $\mathbf{E}_{1}(q_{1}\times q_{1})(the\  \mathbf{a} _{i})$ and $\mathbf{E}_{2}(q_{2}\times q_{2})(the\  \mathbf{b} _{i})$, defined as $\mathbf{E}_{1}=\mathbf{R}_{11}^{-1} \mathbf{R}_{12}\mathbf{R}_{21}^{-1}\mathbf{R} _{22},\quad \mathbf{E}_{2}=\mathbf{R}_{22}^{-1} \mathbf{R}_{21}\mathbf{R}_{11}^{-1}\mathbf{R} _{12}$ where $\mathbf{R}_{11}$ is the correlation matrix of the variables in x, $\mathbf{R}_{22}$ is the correlation matrix of the variables in y, and $\mathbf{R}_{12}=\mathbf{R}_{21}$ is the $q_{1}\times q_{2}$ matrix of correlations across the two sets of variables. The canonical correlations $R_{1},R_{2},...,R_{S}$ are obtained as the square roots of the non-zero eigenvalues of either $\mathbf{E}_{1}$ or $\mathbf{E}_{2}$. The s canonical correlations $R_{1},R_{2},...,R_{S}$ express the association between the x and y variables after removal of the within-set correlation.
+
+9. Inspection of the coefficients of each original variable in each canonicalvariate can provide an interpretation of the canonical variate in much the same way as interpreting principal components.
+
+10. In practise, interpretation of canonical variates can be difficult because of the possibly very different variances and covariances among the original variables in the two sets, which affects the sizes of the coefficients in the canonical variates. Unfortunately, there is no convenient normalisation to place all coefficients on an equal footing (see Krzanowski 2010). In part, this problem can be dealt with by restricting interpretation to the standardised coefficients; i.e., the coefficients that are appropriate when the original variables have been standardised.
+
+3.13.1 Head measurements
+```{r}
+headsize.std <- sweep(headsize, 2, apply(headsize, 2, sd), FUN = "/")
+#This line is standardizing the headsize dataset. For each element in the dataset, it subtracts the mean (which seems to be done outside this snippet) and then divides by the standard deviation of its column, effectively applying z-score normalization.
+R <- cor(headsize.std)
+r11 <- R[1:2, 1:2]
+r22 <- R[-(1:2), -(1:2)]
+r12 <- R[1:2, -(1:2)]
+r21 <- R[-(1:2), 1:2]
+(E1 <- solve(r11) %*% r12 %*% solve(r22) %*%r21)
+```
+
+```{r}
+(E2 <- solve(r22) %*% r21 %*% solve(r11) %*%r12)
+```
+
+```{r}
+(e1 <- eigen(E1))
+```
+
+
+```{r}
+(e2 <- eigen(E2))
+```
+
+```{r}
+girth1 <- headsize.std[,1:2] %*% e1$vectors[,1]
+#This creates a new variable girth1 by projecting the first two 
+#standardized variables onto the first eigenvector of E1.
+
+girth2 <- headsize.std[,3:4] %*% e2$vectors[,1]
+#This creates another new variable girth2 by projecting the last two 
+#standardized variables onto the first eigenvector of E2.
+
+shape1 <- headsize.std[,1:2] %*% e1$vectors[,2]
+#Creates a new variable shape1 by projecting the first two 
+#standardized variables onto the second eigenvector of E1.
+
+shape2 <- headsize.std[,3:4] %*% e2$vectors[,2]
+#Creates shape2 by projecting the last two 
+#standardized variables onto the second eigenvector of E2.
+
+(g <- cor(girth1, girth2))
+#Calculates the Pearson correlation coefficient between girth1 and girth2.
+
+(s <- cor(shape1, shape2))
+```
+Here the four linear functions are found to be
+
+\begin{equation}\begin{split}                                 & u_{1}=+0.73x_{1} + 0.69x_{2},\\                                 & u_{2}=-0.70x_{1} + 0.71x_{2},\\                                 & v_{1}=-0.68x_{3} - 0.73x_{4},\\                                 & v_{2}=-0.71x_{3} + 0.71x_{4},\end{split}\end{equation}
+
+                                
+Findings:
+1. The projection of the standardized data onto these eigenvectors is essentially creating new variables, known as canonical variables. These new variables are linear combinations of the original variables in each set that have the highest possible correlation with each other across the two sets. For example, girth1 is a new variable created by projecting the first two standardized variables onto the first canonical variate of the first set (e1$vectors[,1]). This variable represents a combination of the original variables that has the strongest relationship with the combination represented by girth2 from the second set of variables.
+
+2. The goal of the projection is to reduce the dimensionality of the data while preserving as much of the correlation structure between the two sets of variables as possible. The new canonical variables are designed to capture the essence of the variables in each set with respect to their relationship with the other set.
+
+3. The canonical variables (girth1, girth2, shape1, shape2) can then be analyzed to understand the nature of the relationships between the two sets of variables. By examining these variables, one can determine which combinations of variables within each set are most related to each other.
+
+4. Calculating the correlation between girth1 and girth2 is a check to see how well the derived canonical variables represent the relationship between the two sets of original variables. In theory, the first pair of canonical variables should have the highest possible correlation, with each successive pair having a lower correlation.
+
+Fig. 3.12. Scatterplots of girth and shape for first and second sons.
+```{r}
+plot(girth1, girth2)
+```
+```{r}
+plot(shape1, shape2)
+```
+
+Conclusions: 
+1. The first canonical variate for both first and second sons is simply a weighted sum of the two head measurements and might be labelled “girth”; these two variates have a correlation of −0.79. (The negative value arises because of the arbitrariness of the sign in the first coefficient of an eigenvector– here both coefficients for girth in first sons are positive and for second sons.
+
+2. it is clear that the association between the two head measurements of first and second sons is almost entirely expressed through the “girth” variables, with the two “shape” variables being almost uncorrelated. The association between the two sets of measurements is essentially one-dimensional.
+
+
+3.13.2 Health and personality
+Data Description: The data for this example arise from a study of depression amongst 294 respondents
+in Los Angeles. The two sets of variables of interest were “health variables”, namely the CESD (the sum of 20 separate numerical scales measuring different aspects of depression) and a measure of general health and “personal” variables, of which there were four: gender, age, income, and educational level (numerically coded from the lowest “less than high school”, to the highest, “finished doctorate”). 
+
+```{r}
+depr <- c(
+ 0.212,
+ 0.124, 0.098,
+-0.164, 0.308, 0.044,
+-0.101, -0.207, -0.106, -0.208,
+-0.158, -0.183, -0.180, -0.192, 0.492)
+LAdepr <- diag(6) / 2
+LAdepr[upper.tri(LAdepr)] <- depr
+LAdepr <- LAdepr + t(LAdepr)
+rownames(LAdepr) <- colnames(LAdepr) <- c("CESD", "Health", "Gender", "Ag
+e", "Edu", "Income")
+x <- LAdepr
+LAdepr <- as.data.frame(LAdepr)
+```
+
+```{r}
+LAdepr <- x
+r11 <- LAdepr[1:2, 1:2]
+r22 <- LAdepr[-(1:2), -(1:2)]
+r12 <- LAdepr[1:2, -(1:2)]
+r21 <- LAdepr[-(1:2), 1:2]
+(E1 <- solve(r11) %*% r12 %*% solve(r22) %*%r21)
+```
+
+```{r}
+(E2 <- solve(r22) %*% r21 %*% solve(r11) %*%r12)
+```
+
+```{r}
+(e1 <- eigen(E1))
+```
+
+```{r}
+(e2 <- eigen(E2))
+```
+Findings: 
+1. (Note that the third and fourth eigenvalues of E2 are essentially zero, as we would expect in this case.) The first canonical correlation is 0.409, calculated as the square root of the first eigenvalue of E1, which is given above as 0.15347. If tested as outlined in Exercise 3.4, it has an associated p-value that is very
+small; there is strong evidence that the first canonical correlation is significant. The corresponding variates, in terms of standardized original variables, are
+
+\begin{equation}\begin{split}                                 & u_{1}=+0.53 CESD − 0.85 Health,\\            & v_{1}=−0.00 Gender − 0.98 Age + 0.19 Education − 0.07 Income.\end{split}\end{equation}
+
+
+2. High coefficients correspond to CESD (positively) and health (negatively) for the perceived health variables, and to Age (negatively) and Education (positively) for the personal variables. It appears that relatively older and medicated people tend to have lower depression scores, but perceive their health as relatively poor, while relatively younger but educated people have the opposite health perception.
+
+3. The second canonical correlation is 0.261, calculated as the square root of the second eigenvalue, found from the R output above to be 0.06347; this correlation is also significant (see Exercise 3.4). The corresponding canonical variates are 
+
+\begin{equation}\begin{split}                                 & u_{2}=−0.91 CESD − 0.42 Health,\\            & v_{2}=+0.49 Gender − 0.32 Age − 0.43 Education − 0.69 Income.\end{split}\end{equation}
+
+
+4. Since the higher value of the Gender variable is for females, the interpretation here is that relatively young, poor, and uneducated females are associated with higher depression scores and, to a lesser extent, with poor perceived health.

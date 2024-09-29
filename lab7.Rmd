@@ -1,0 +1,301 @@
+---
+title: "lab7"
+date: "2024-03-06"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+install.packages("ellipse")
+```
+
+5.9 Two examples of exploratory factor analysis
+
+5.9.1 Expectations of life
+The data come from Keyfitz and Flieger (1971) and relate to life expectancies in the 1960s.
+
+```{r}
+library("MVA")
+library("ellipse")
+```
+
+```{r}
+d <- c(0.447,          
+   0.422, 0.619,       
+   0.435, 0.604, 0.583,        
+   0.114, 0.068, 0.053, 0.115,        
+   0.203, 0.146, 0.139, 0.258, 0.349,   
+   0.091, 0.103, 0.110, 0.122, 0.209, 0.221,
+   0.082, 0.063, 0.066, 0.097, 0.321, 0.355, 0.201,
+   0.513, 0.445, 0.365, 0.482, 0.186, 0.315, 0.150, 0.154,
+   0.304, 0.318, 0.240, 0.368, 0.303, 0.377, 0.163, 0.219, 0.534,
+   0.245, 0.203, 0.183, 0.255, 0.272, 0.323, 0.310, 0.288, 0.301, 0.302,
+   0.101, 0.088, 0.074, 0.139, 0.279, 0.367, 0.232, 0.320, 0.204, 0.368, 0.340,
+   0.245, 0.199, 0.184, 0.293, 0.278, 0.545, 0.232, 0.314, 0.394, 0.467, 0.392, 0.511)
+
+ druguse <- diag(13) / 2
+
+ druguse[upper.tri(druguse)] <- d
+
+ druguse <- druguse + t(druguse)
+
+ rownames(druguse) <- colnames(druguse) <- c("cigarettes", "beer", "wine", "liquor", "cocaine",
+         "tranquillizers", "drug store medication", "heroin",
+         "marijuana", "hashish", "inhalants", "hallucinogenics", "amphetamine")
+
+"life" <- structure(.Data = list(c(63., 34., 38., 59., 56., 62., 50., 65., 56., 69., 65., 64., 56., 60., 61., 49., 59., 63.,59., 65., 65., 64., 64., 67., 61., 68., 67., 65., 59., 58., 57.)
+ , c(51., 29., 30., 42., 38., 44., 39., 44., 46., 47., 48., 50., 44., 44., 45., 40., 42., 44., 44., 48., 48., 63.,
+         43., 45., 40., 46., 45., 46., 43., 44., 46.)
+ , c(30., 13., 17., 20., 18., 24., 20., 22., 24., 24., 26., 28., 25., 22., 22., 22., 22., 23., 24., 28., 26., 21.,
+         21., 23., 21., 23., 23., 24., 23., 24., 28.)
+ , c(13., 5., 7., 6., 7., 7., 7., 7., 11., 8., 9., 11., 10., 6., 8., 9., 6., 8., 8., 14., 9., 7., 6., 8., 10., 8.,
+         8., 9., 10., 9., 9.)
+ , c(67., 38., 38., 64., 62., 69., 55., 72., 63., 75., 68., 66., 61., 65., 65., 51., 61., 67., 63., 68., 67., 68.,
+         68., 74., 67., 75., 74., 71., 66., 62., 60.)
+ , c(54., 32., 34., 46., 46., 50., 43., 50., 54., 53., 50., 51., 48., 45., 49., 41., 43., 48., 46., 51., 49., 47.,
+         47., 51., 46., 52., 51., 51., 49., 47., 49.)
+ , c(34., 17., 20., 25., 25., 28., 23., 27., 33., 29., 27., 29., 27., 25., 27., 23., 22., 26., 25., 29., 27., 25.,
+         24., 28., 25., 29., 28., 28., 27., 25., 28.)
+ , c(15., 6., 7., 8., 10., 14., 8., 9., 19., 10., 10., 11., 12., 9., 10., 8., 7., 9., 8., 13., 10., 9., 8., 10., 11.,
+         10., 10., 10., 12., 10., 11.)
+ )
+ , class = "data.frame" 
+ , names = c("m0", "m25", "m50", "m75", "w0", "w25", "w50", "w75")
+ , row.names = c("Algeria", "Cameroon", "Madagascar", "Mauritius", "Reunion", "Seychelles", "South Africa (C)", "South Africa (W)",
+         "Tunisia", "Canada", "Costa Rica", "Dominican Rep.", "El Salvador", "Greenland", "Grenada", "Guatemala",
+         "Honduras", "Jamaica", "Mexico", "Nicaragua", "Panama", "Trinidad (62)", "Trinidad (67)",
+         "United States (66)", "United States (NW66)", "United States (W66)", "United States (67)", "Argentina",
+         "Chile", "Colombia", "Ecuador")
+ )
+```
+
+```{r}
+sapply(1:3, function(f) 
+     factanal(life, factors = f, method ="mle")$PVAL)
+```
+
+Finding: 1.The significant drop in the magnitude of the objective value from the first to the second and notably from the second to the third suggests that the fit of the model improves as the number of factors increases from 1 to 2 and also from 2 to 3. 
+
+2. The p-value in the context of factor analysis (and statistical tests in general) assesses the significance of the factors extracted. More specifically, in factor analysis, p-values can be used to test the hypothesis that the observed correlation matrix is an identity matrix, suggesting no underlying factor structure. A low p-value would lead to the rejection of this hypothesis, implying that there is a significant factor structure present.
+A small p-value (typically ≤ 0.05) indicates strong evidence against the null hypothesis, so you reject the null hypothesis.
+
+A large p-value (> 0.05) indicates weak evidence against the null hypothesis, so you fail to reject the null hypothesis.
+A p-value very close to the cutoff (e.g., 0.05) is considered to be marginal, and one may wish to take other factors into account before making a conclusion. (Page 143)
+
+
+```{r}
+factanal(life, factors = 3, method ="mle")
+```
+Interpretation: 
+1. Uniquenesses: These values represent the proportion of variance in each variable that is unique to that variable and not shared with other variables. Low values suggest that the variable is well explained by the factors, while high values suggest that the variable is not well explained by the factors. For instance, m0 and w0 have very low uniquenesses, indicating these are well represented by the factor model. In contrast, m25 and m75 have higher uniquenesses, suggesting these variables are not as well explained by the three factors.
+
+2. Loadings: This table shows how each original variable contributes to each factor. High absolute values indicate a strong association between the variable and the factor. For example, m0 has a high loading on Factor1, indicating a strong association. The loadings can be positive or negative, indicating the direction of the association. Factors are usually interpreted based on which variables have the highest loadings on them.  In the context of the loadings table from a factor analysis output, a blank part (or spaces where you might expect numerical values) typically indicates that the loading value for a given variable on a particular factor is very small, often close to zero, and has been omitted or suppressed for clarity and ease of interpretation. 
+
+3. SS Loadings: This is the sum of squared loadings for each factor, indicating the total variance explained by each   Factor1 explains the most variance, followed by Factor2 and Factor3.
+
+4. Proportion Var: This represents the proportion of total variance explained by each factor. For example, Factor1 explains 42.2% of the variance.
+
+5. Test of the hypothesis that 3 factors are sufficient: This section presents the results of a chi-square test to evaluate if three factors sufficiently capture the structure of the data. The chi-square statistic is 6.73 with 7 degrees of freedom, and the p-value is 0.458. The p-value indicates the probability of observing data as extreme as or more extreme than what was observed if the null hypothesis (that three factors are sufficient to explain the relationships among variables) is true. A high p-value (usually > 0.05) suggests that the null hypothesis cannot be rejected, implying that the model with three factors is a good fit for the data.
+
+
+Findings: Examining the estimated factor loadings, we see that the first factor is dominated by life expectancy at birth for both males and females; perhaps this factor could be labelled “life force at it “life force amongst the elderly”. The third factor from the varimax rotation has its highest loadings for the life expectancies of men aged 50 and 75 and in the same vein might be labelled “life force for elderly men”. (When labelling factors in this way, factor analysts can often be extremely creative!)
+
+The estimated factor scores are found as follows:
+```{r}
+(scores <- factanal(life, factors = 3, method = "mle", scores = "regression")$scores)
+```
+Findings: 
+The screenshot displays the estimated factor scores for a dataset following a factor analysis where 3 factors were extracted. Factor scores are essentially the values for each observation (in this case, countries) on the extracted factors, and they provide a way to understand how each observation relates to the identified dimensions (factors) of the dataset. 
+
+Factor Scores: Each cell in the table represents the score of a country on one of the three factors. These scores can be interpreted as coordinates or positions of each country in the multidimensional space defined by the factors. Higher absolute values indicate a stronger relationship with the factor, whether positive or negative.
+
+Factor1, Factor2, and Factor3: These are the three dimensions (factors) extracted from your data. The meaning of each factor depends on the variables that load heavily on it (not shown in this screenshot but found in the loadings part of your factor analysis output).
+
+Positive Scores: A positive score on a factor suggests that the country has a high association with the variables that are positively loaded on that factor.
+Negative Scores: Conversely, a negative score indicates a high association with variables that are negatively loaded on that factor.
+
+Comparison and Clustering: By comparing these scores, you can group countries with similar profiles across the factors. This could reveal clusters of countries that share common characteristics as defined by the factor analysis.
+
+Application: Factor scores can be used for further analysis, such as clustering, regression, or as inputs to other models where the dimensions identified by the factor analysis are relevant predictors or classifications.
+
+Method - "Regression": The method used to estimate the scores is "regression", which is one of the methods for estimating factor scores. This approach regresses the observed variables on the factors to estimate scores, aiming to provide scores that best reflect the relationships identified in the factor analysis.
+
+e.g. 
+Algeria, for example, has a low score on Factor1 (-0.258) but high positive scores on Factor2 (1.900) and Factor3 (1.915), suggesting it aligns closely with the dimensions or themes represented by Factors 2 and 3.
+Cameroon shows negative scores across all three factors, with particularly low scores on Factor1 (-2.782) and Factor3 (-1.847), indicating its distinct position in the factor space compared to others.
+Canada shows a high positive score on Factor1 (1.245) but negative scores on Factors 2 and 3, highlighting a different profile compared to, for example, Algeria.
+
+
+
+
+We can use the scores to provide the plot of the data shown in Figure 5.1
+
+Fig. 5.1. Individual scatterplots of three factor scores for life expectancy data, with points labelled by abbreviated country names.
+
+```{r}
+cex <- 0.8
+plot(scores[,1], scores[,2], type = "n", xlab = "Factor 1", ylab = "Factor 2")
+text(scores[,1], scores[,2], abbreviate(rownames(life), 5), cex = cex)
+```
+
+```{r}
+plot(scores[,1], scores[,3], type = "n", xlab = "Factor 1", ylab = "Factor 3")
+
+text(scores[,1], scores[,3], abbreviate(rownames(life), 5), cex = cex)
+```
+
+```{r}
+plot(scores[,2], scores[,3], type = "n", xlab = "Factor 2", ylab = "Factor 3")
+
+text(scores[,2], scores[,3], abbreviate(rownames(life), 5), cex = cex)
+```
+Interpretation
+Interpretation of Positioning: 
+Horizontal Position: Entities towards the left or right have significant scores on Factor 2, which may suggest they share certain characteristics more strongly associated with this factor. The actual meaning of "left" vs "right" depends on what Factor 2 represents, which is determined by the loadings of the original variables on this factor.
+Vertical Position: Similarly, entities towards the top or bottom are significantly scored on Factor 3, indicating a strong association with the characteristics that Factor 3 represents. Again, the interpretation depends on the variables that load highly on Factor 3.
+
+Clusters and Outliers:
+Clusters: Groups of points that are close together indicate entities with similar scores on these two factors, suggesting they share certain characteristics or patterns.
+Outliers: Points that are far from others, such as "Alger" and "Tunis" at the extreme right, might have unique characteristics that set them apart from the rest in terms of the factors being analyzed.
+
+Findings: Ordering along the first axis reflects life force at birth ranging from Cameroon and Madagascar to countries such as the USA. And on the third axis Algeria is prominent because it has high life expectancy amongst men at higher ages, with Cameroon at the lower end of the scale with a low life expectancy for men over 50.
+
+
+5.9.2 Drug use by American college students
+Data Discription: The majority of adult and adolescent Americans regularly use psychoactive substances during an increasing proportion of their lifetimes. Various forms of licit and illicit psychoactive substance use are prevalent, suggesting that patterns of psychoactive substance taking are a major part of the individual’s behavioural repertory and have pervasive implications for the performance of other behaviours. In an investigation of these phenomena, Huba, Wingard, and Bentler (1981) collected data on drug usage rates for 1634 students in the seventh to ninth grades in 11 schools in the greater metropolitan area of Los Angeles. Each participant completed a questionnaire about the number of times a particular substance had ever been used
+```{r}
+
+library(lattice)
+ord <- order.dendrogram(as.dendrogram(hclust(dist(druguse))))  
+
+panel.corrgram <-    
+     function(x, y, z, subscripts, at,  
+              level = 0.9, label = FALSE, ...) 
+ {
+     require("ellipse", quietly = TRUE)
+     x <- as.numeric(x)[subscripts]   
+     y <- as.numeric(y)[subscripts]     
+     z <- as.numeric(z)[subscripts]   
+     zcol <- level.colors(z, at = at, col.regions = grey.colors, ...)   
+     for (i in seq(along = z)) {
+         ell <- ellipse(z[i], level = level, npoints = 50,   
+                        scale = c(.2, .2), centre = c(x[i], y[i]))
+         panel.polygon(ell, col = zcol[i], border = zcol[i], ...)
+     }
+     if (label)  
+         panel.text(x = x, y = y, lab = 100 * round(z, 2), cex = 0.8,
+                    col = ifelse(z < 0, "white", "black"))   
+ }    
+
+ print(levelplot(druguse[ord, ord], at = do.breaks(c(-1.01, 1.01), 20),
+           xlab = NULL, ylab = NULL, colorkey = list(space = "top"), 
+           scales = list(x = list(rot = 90)),
+          panel = panel.corrgram, label = TRUE))
+```
+Findings: The figure depicts each correlation by an ellipse whose shape tends towards a line with slope 1 for correlations near 1, to a circle for correlations near zero, and to a line with negative slope −1 for negative correlations near −1. In addition, 100 times the correlation coefficient is printed inside the ellipse, and a colourcoding indicates strong negative (dark) to strong positive (light) correlations.
+
+
+We first try to determine the number of factors using the maximum likelihood test. The R code for finding the results of the test for number of factors here is:
+```{r}
+sapply(1:6, function(nf)
+     factanal(covmat = druguse, factors = nf, 
+              method = "mle", n.obs = 1634)$PVAL)
+```
+Objective 1: The p-value is 0.00000e+00 for the model with 1 factor, indicating a statistically significant lack of fit, meaning that one factor is not sufficient to explain the structure of the covariance matrix adequately.
+
+Objective 2: The p-value improves to 9.78600e-07 for the model with 2 factors, but it is still indicating a statistically significant lack of fit, though it's better than the 1-factor model.
+
+Objective 3: For 3 factors, the p-value further improves to 7.36391e-28, showing that increasing the number of factors continues to improve the model fit. Despite the improvement, the statistical significance still suggests inadequacy in fitting the data completely.
+
+Objective 4: With 4 factors, the p-value is 1.4578e-11, indicating a better fit than the 3-factor model but still statistically significant, suggesting that even four factors may not fully capture the covariance structure.
+
+Objective 5: For 5 factors, the p-value is 3.89143e-06, which is a noticeable improvement and suggests that the model with 5 factors fits the data structure better than models with fewer factors, although the fit is still statistically significant.
+
+Objective 6: With 6 factors, the p-value is 0.752967e-02 (or 0.00752967 when written more straightforwardly), showing the best fit among the models tested. This is the first instance where the p-value suggests that the model might not be significantly lacking in fit compared to the others, though it is on the borderline of the common alpha level of 0.05 used to judge statistical significance.
+
+
+These values suggest that only the six-factor solution provides an adequate fit. The results from the six-factor varimax solution are obtained from
+```{r}
+(factanal(covmat = druguse, factors = 6, 
+           method = "mle", rotation="varimax", n.obs = 1634))
+
+```
+Interpretation:
+Uniquenesses: This part lists the variables analyzed and their uniqueness values, which represent the proportion of variance in each variable that is not explained by the extracted factors. Lower values indicate that the factors explain more of the variance for that variable. For example, amphetamine has a very low uniqueness (0.005), meaning most of its variance is explained by the model, whereas cocaine has a high uniqueness (0.681), indicating that the model explains less of its variance.
+
+Loadings: The loadings show how each variable is associated with each of the 6 factors. A higher absolute value indicates a stronger association.
+For interpretation:
+Factor1 appears to be heavily associated with alcohol use (beer, wine, liquor) and possibly represents an "alcohol use" factor.
+Factor2 has significant loadings for cocaine and tranquilizers, which might represent usage of prescription or recreational drugs that are used in social contexts or for stimulant effects.
+Factor3 reveals a significant association with amphetamine, indicating a strong loading of 0.886. This suggests that Factor3 is heavily influenced by the use of amphetamines, pointing towards a pattern of stimulant drug use. 
+Factor4 is strongly associated with hashish, suggesting it might represent cannabis use.
+Factor5 has a significant loading for marijuana, indicating it captures variance related to the use of marijuana.
+Factor6 strongly associated with inhalants.
+
+SS Loadings: The sum of squared loadings for each factor, representing the total variance explained by each factor. For example, Factor1 explains a considerable amount of variance (2.301), indicative of its significance in the dataset.
+
+Proportion Var: This shows the proportion of the total variance explained by each factor. Adding these gives the cumulative variance explained by the model, which helps in assessing the model's overall explanatory power.
+
+Cumulative Var: The cumulative variance explained by the factors up to that point. By the sixth factor, approximately 54.9% of the variance in the dataset is explained.
+
+Test of the hypothesis that 6 factors are sufficient: The chi-square statistic (22.41) with 15 degrees of freedom and a p-value of 0.0975 suggests the model's fit to the data. The p-value is greater than 0.05, indicating that the null hypothesis (that 6 factors are sufficient to explain the observed correlations) cannot be rejected at a typical alpha level of 0.05. This means the model with 6 factors provides a reasonably good fit to the data, although it's close to the threshold and suggests careful consideration in interpreting the sufficiency of the model.
+
+Findings on book: 
+Substances that load highly on the first factor are cigarettes, beer, wine, liquor, and marijuana and we might label it “social/soft drug use”. Cocaine, tranquillizers, and heroin load highly on the second factor–the obvious label for the factor is “hard drug use”. Factor three is essentially simply amphetamine use, and factor four hashish use. We will not try to interpret the last two factors, even though the formal test for number of factors indicated that a six-factor solution was necessary. It may be that we should not take the results of the formal test too literally; rather, it may be a better strategy to consider the value of k indicated by the test to be an upper bound on the number of factors with practical importance. Certainly a six-factor solution for a data set with only 13 manifest variables might be regarded as not entirely satisfactory, and clearly we would have some difficulties interpreting all the factors.
+
+
+One of the problems is that with the large sample size in this example, even small discrepancies between the correlation matrix predicted by a proposed model and the observed correlation matrix may lead to rejection of the model. One way to investigate this possibility is simply to look at the differences between the observed and predicted correlations. We shall do this first for the six-factor model using the following R code:
+```{r}
+pfun <- function(nf) {
+     fa <- factanal(covmat = druguse, factors = nf, 
+                    method = "mle", n.obs = 1634)
+     est <- tcrossprod(fa$loadings) + diag(fa$uniquenesses)
+     ret <- round(druguse - est, 3)
+     colnames(ret) <- rownames(ret) <- 
+         abbreviate(rownames(ret), 3)
+     ret
+}
+
+pfun(6) 
+
+#This function computes the predicted scores (or estimated variables) 
+#based on the factor analysis model and then calculates the 
+#difference between the observed variables in the dataset druguse 
+#and the estimated variables, rounding the results to 3 decimal places.
+```
+
+Findings: 
+1. The resulting matrix shows the differences for each pair of variables. For example, the difference between the observed and estimated corrlation for cigarettes (cgr) and beer (ber) is -0.001, indicating a very small discrepancy, suggesting the factor model closely reproduces the observed relationship between these variables. Essentially, values close to zero indicate a good fit of the factor model to the data, as it suggests the model accurately reproduces the observed covariances or correlations between variables.
+
+2. The mostly zero or near-zero values across the matrix suggest that the factor model with 6 factors does a good job of approximating the observed covariance structure of the druguse dataset, at least based on the precision displayed here. This is a useful way to visually inspect the adequacy of the factor model in reproducing the data's covariance structure.
+
+Fig. 5.3. Differences between three- and four-factor solutions and actual correlation matrix for the drug use data.
+```{r}
+pfun(3)
+```
+
+
+```{r}
+pfun(4)
+```
+Findings: In both cases the residuals are all relatively small, suggesting perhaps that use of the formal test for number of factors leads, in this case, to overfitting. The three-factor model appears to provide a perfectly adequate fit for these data.
+
+
+5.10 Factor analysis and principal components analysis compared
+Factor analysis, like principal components analysis, is an attempt to explain a set of multivariate data using a smaller number of dimensions than one begins with, but the procedures used to achieve this goal are essentially quite different in the two approaches. Some differences between the two are as follows:
+1. Factor analysis tries to explain the covariances or correlations of the observed variables by means of a few common factors. Principal components analysis is primarily concerned with explaining the variance of the observed variables.
+
+2. If the number of retained components is increased, say from m to m+1, the first m components are unchanged. This is not the case in factor analysis, where there can be substantial changes in all factors if the number of factors is changed.
+
+3. The calculation of principal component scores is straightforward, but the calculation of factor scores is more complex, and a variety of methods have been suggested.
+ 
+4. There is usually no relationship between the principal components of the sample correlation matrix and the sample covariance matrix. For maximum likelihood factor analysis, however, the results of analyzing either matrix
+are essentially equivalent (which is not true of principal factor analysis).
+
+Despite these differences, the results from both types of analyses are frequently very similar. Certainly, if the specific variances are small, we would expect both forms of analyses to give similar results. However, if the specific variances are large, they will be absorbed into all the principal components, both retained and rejected, whereas factor analysis makes special provision for them. 
+
+Lastly, it should be remembered that both principal components analysis and factor analysis are similar in one important respect–they are both pointless if the observed variables are almost uncorrelated. In this case, factor analysis has nothing to explain and principal components analysis will simply lead to components that are similar to the original variables. 

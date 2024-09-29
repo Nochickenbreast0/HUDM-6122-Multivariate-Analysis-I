@@ -1,0 +1,370 @@
+---
+title: "lab6"
+date: "2024-02-28"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+4. Multidimensional Scaling
+Multidimensional scaling is essentially a data reduction technique because the aim is to find a set of points in low dimension that approximate the possibly high-dimensional configuration represented by the original proximity matrix.
+
+4.4 Classical multidimensional scaling
+4.4.2 Examples of classical multidimensional scaling
+```{r}
+library("MVA")
+X <- matrix(c(
+     3, 5, 6, 1, 4, 2, 0, 0, 7, 2,
+     4, 1, 2, 1, 7, 2, 4, 6, 6, 1,
+     4, 1, 0, 1, 3, 5, 1, 4, 5, 4,
+     6, 7, 2, 0, 6, 1, 1, 3, 1, 3,
+     1, 3, 6, 3, 2, 0, 1, 5, 4, 1), nrow = 10)
+(D <- dist(X))
+#the associated matrix of Euclidean distances 
+#(computed via the dist() function) will be our proximity matrix.
+
+#Note: A proximity matrix, also known as a distance matrix, 
+#is a matrix used to represent the distance or 
+#similarity between different sets of elements
+```
+```{r}
+cmdscale(D, k = 7, eig = TRUE)
+#D represents the distances or dissimilarities btween pairs of items.
+
+#k = 7 indicates that the data should be represented in a 9-dimensional space.
+
+#eig = TRUE: When this parameter is set to TRUE, the function will 
+#return eigenvalues in addition to the point configuration. 
+#Eigenvalues can be used to assess the dimensionality of the data 
+#and the variance explained by each dimension.
+
+```
+Interpretation: 
+Points: This is a matrix of coordinates for each point in the reduced space. There are 10 points (rows) and 7 dimensions (columns). These are the new positions of your original points in a 7-dimensional space that best preserve the distances between points in the original high-dimensional space.
+
+Eigenvalues ($eig): These are the eigenvalues associated with each dimension. They can be interpreted as the amount of variance captured by each dimension. Typically, dimensions with larger eigenvalues capture more of the variance in the data. The first few eigenvalues are quite large compared to the others, which suggests that these dimensions are the most important in capturing the structure of the data. The last few eigenvalues are very small or negative, which sometimes occurs due to rounding errors or indicates that these dimensions do not capture much variance and could potentially be dropped. 
+
+$x: This would normally hold the eigenvectors if they were calculated, but it appears to be NULL in your output. This suggests that the eigenvectors were not requested or not returned for some other reason.
+
+$ac: This is the Guttman transform stress coefficient, which is a measure of how well the MDS solution has achieved a lower-dimensional representation of the data. A value of 0 indicates a perfect fit, but this is rare in practice. 
+
+Findings:
+
+1. Note that as q = 5 in this example, eigenvalues six to nine are essentially zero and only the first five columns of points represent the Euclidean distance matrix.
+
+
+we should confirm that the five-dimensional solution achieves complete recovery of the observed distance matrix. We can do this simply by comparing the original distances with those calculated from the five-dimensional scaling solution coordinates using the following R code:
+```{r}
+max(abs(dist(X) - dist(cmdscale(D, k = 5))))
+```
+Conclusion: This confirms that all the differences are essentially zero and that therefore the observed distance matrix is recovered by the five-dimensional classical scaling solution.
+
+
+
+We can also check the duality of classical scaling of Euclidean distances and principal components analysis mentioned previously in the chapter by comparing the coordinates of the five-dimensional scaling solution given above with the first five principal component (up to signs) scores obtained by applying PCA to the covariance matrix of the original data;
+```{r}
+max(abs(prcomp(X)$x) - abs(cmdscale(D, k = 5)))
+```
+Interpretation: The result 2.346387e-14 is a very small number, which is effectively zero within the limits of computational precision. This suggests that the PCA and MDS are yielding very similar configurations for the data when reduced to five dimensions, indicating that the principal components from PCA are almost identical to the dimensions found by MDS for the given dataset. This is not unexpected since both PCA and MDS aim to capture the main variation in the data, although they approach the problem from slightly different angles (PCA from the perspective of variance, MDS from the perspective of distance/dissimilarity).
+
+
+
+
+Now let us look at two examples involving distances that are not Euclidean. First, we will calculate the Manhattan distances between the rows of the small data matrix X. The Manhattan distance for units i and j is given by $\sum_{k=1}^{q} \left | x_{ik}-x_{jk}   \right |$, and these distances are not Euclidean. The R code for calculating the Manhattan distances and then applying classical multidimensional scaling to the resulting distance matrix is
+```{r}
+X_m <- cmdscale(dist(X, method = "manhattan"), k = nrow(X) - 1, eig = TRUE)
+```
+
+
+The criteria $P_{m}^{(1)}$ and $P_{m}^{(2)}$ can be computed from the eigenvalues as follows:
+```{r}
+(X_eigen <- X_m$eig)
+```
+```{r}
+cumsum(abs(X_eigen)) / sum(abs(X_eigen))
+```
+```{r}
+cumsum(X_eigen^2) / sum(X_eigen^2)
+```
+Conclusion: The values of both criteria suggest that a three-dimensional solution seems to fit well.
+
+
+
+```{r}
+dist_matrix <- matrix(
+  c(
+    0, 587, 1212, 701, 1936, 604, 748, 2139, 218, 543,
+    587, 0, 920, 940, 1745, 1188, 713, 1858, 1737, 597,
+    1212, 920, 0, 879, 831, 1726, 1631, 949, 1021, 1494,
+    701, 940, 879, 0, 1374, 968, 1420, 1645, 1891, 1220,
+    1936, 1745, 831, 1374, 0, 2339, 2451, 347, 959, 2300,
+    604, 1188, 1726, 968, 2339, 0, 1092, 2594, 2734, 923,
+    748, 713, 1631, 1420, 2451, 1092, 0, 2571, 2408, 205,
+    2139, 1858, 949, 1645, 347, 2594, 2571, 0, 678, 2442,
+    218, 1737, 1021, 1891, 959, 2734, 2408, 678, 0, 2329,
+    543, 597, 1494, 1220, 2300, 923, 205, 2442, 2329, 0
+  ),
+  nrow = 10,
+  byrow = TRUE
+)
+
+colnames(dist_matrix) <- rownames(dist_matrix) <- c('ATL', 'ORD', 'DEN', 'HOU', 'LAX', 'MIA', 'JFK', 'SFO', 'SEA', 'IAD')
+
+airdist <- as.data.frame(dist_matrix)
+
+print(airdist)
+
+```
+
+
+These distances are not Euclidean since they relate essentially to journeys along the surface of a sphere. To apply classical scaling to these distances and to see the eigenvalues, we can use the following R code
+```{r}
+airline_mds <- cmdscale(airdist, k = 9, eig = TRUE)
+
+airline_mds$points
+```
+```{r}
+(lam <- airline_mds$eig)
+```
+As expected (as the distances are not Euclidean), some of the eigenvalues are negative and so we will again use the criteria $P_{m}^{(1)}$ and $P_{m}^{(2)}$ to assess how many coordinates we need to adequately represent the observed distance matrix.
+
+```{r}
+cumsum(abs(lam)) / sum(abs(lam))
+```
+
+```{r}
+cumsum(lam^2) / sum(lam^2)
+```
+Conclusions: These values suggest that the first two coordinates will give an adequate representation of the observed distances.
+
+
+Fig. 4.1. Two-dimensional classical MDS solution for airline distances. The known spatial arrangement is clearly visible in the plot.
+
+```{r}
+mds <- cmdscale(airdist)
+
+lim <- range(mds[,1] * (-1)) * 1.2
+
+plot(mds[,1]*(-1), mds[,2], xlab="Coordinate 1", ylab="Coordinate 2", type="n", xlim = lim, ylim = lim) 
+# 'type="n"' avoids plotting the points
+
+text(mds[,1]*(-1), mds[,2], labels=rownames(airdist))
+# Add text labels at the coordinates
+
+```
+Interpretation: 
+Distance Representation: The closer two points (cities) are on the plot, the smaller the airline distance between them. Conversely, the farther apart two points are, the greater the distance. This spatial representation allows for an intuitive understanding of relative distances.
+
+Clustering of Cities: Cities that are closer together on the map are more similar to each other in terms of airline distances. For example, cities like SFO and LAX appear close to each other, reflecting the fact that they are geographically close in real life. Similarly, cities on the East Coast, like JFK, IAD, and MIA, are grouped closer together.
+
+Dimensional Interpretation: The axes (Coordinate 1 and Coordinate 2) are the two principal dimensions that result from the MDS process. They do not correspond to geographic directions (north, south, east, west) but rather to the most significant variations in the distances between cities. The first coordinate captures the largest variance, and the second coordinate captures the next largest.
+
+Outliers: If any city appears far from the others, it can be considered relatively distant from most cities in the dataset in terms of airline distance. In the plot, there doesn't seem to be a stark outlier, but some cities are more peripheral (e.g., SEA, MIA), indicating they are generally farther away from the rest of the cities in the dataset.
+
+Symmetry and Scaling: The plot may not reflect the actual geographical layout of the cities. MDS focuses on preserving distances, not on maintaining north-south or east-west orientations. The scaling factor (multiplied by -1 in your code) is used for adjusting the orientation of the plot for better visual interpretation but doesn't change the relative distances.
+
+
+
+Our next example of the use of classical multidimensional scaling will involve the data shown in Table 4.2. These data show four measurements on male Egyptian skulls from five epochs. The measurements are:
+mb: maximum breadth of the skull;
+bh: basibregmatic height of the skull;
+bl: basialiveolar length of the skull; and
+nh: nasal height of the skull.
+
+```{r}
+data("skulls", package = "HSAUR2")
+```
+
+We shall calculate Mahalanobis distances between each pair of epochs using the mahalanobis() function and apply classical scaling to the resulting distance matrix. In this calculation, we shall use the estimate of the assumed common covariance matrix $\mathbf{S}$, 
+$$
+\mathbf{S}=\frac{29\mathbf{S}_{1}+29\mathbf{S}_{2}+29\mathbf{S}_{3}+29\mathbf{S}_{4}+29\mathbf{S}_{5}}{149}
+$$ 
+
+where $\mathbf{S}_{1}$, $\mathbf{S}_{2}$,..., $\mathbf{S}_{5}$ are the covariance matrices of the data in each epoch. We shall then use the first two coordinate values to provide a map of the data showing the relationships between epochs.
+
+
+```{r}
+skulls_var <- tapply(1:nrow(skulls), skulls$epoch, 
+                     function(i) var(skulls[i,-1]))
+#This line is using the tapply function to apply a function to 
+#each subset of the skulls data frame. The subsets are defined by 
+#the unique values in skulls$epoch. For each subset, it computes 
+#the variance of all columns except the first one.
+S <- 0
+for (v in skulls_var) S <- S + 29 * v
+#it is a scaling factor or the number of samples in each group
+(S <- S / 149)
+```
+
+```{r}
+skulls_cen <- tapply(1:nrow(skulls), skulls$epoch,
+function(i) apply(skulls[i,-1], 2, mean))
+#The apply function is used to calculate the mean across 
+#each row (the second dimension of the data frame)
+
+skulls_cen <- matrix(unlist(skulls_cen),
+nrow = length(skulls_cen), byrow = TRUE)
+skulls_mah <- apply(skulls_cen, 1,
+function(cen) mahalanobis(skulls_cen, cen, S))
+#the apply function is used to calculate the Mahalanobis distance of
+#each row in skulls_cen from the centroid cen (which is each row in turn)
+skulls_mah
+```
+
+```{r}
+cmdscale(skulls_mah, k = nrow(skulls_mah) - 1, eig = TRUE)$eig
+```
+
+Fig. 4.2. Two-dimensional solution from classical MDS applied to Mahalanobis distances between epochs for the skull data.
+```{r}
+skulls_mds <- cmdscale(skulls_mah)
+lim <- range(skulls_mds) * 1.2
+plot(skulls_mds, xlab = "Coordinate 1", ylab = "Coordinate 2",
+     xlim = lim, ylim = lim, type = "n")
+
+text(skulls_mds, labels = levels(skulls$epoch), cex = 0.7)
+```
+Conclusion: It shows that the scaling solution for the skulls data is essentially unidimensional, with this single dimension time ordering the five epochs. There appears to be a change in the “shape” of the skulls over time, with maximum breadth increasing and basialiveolar length decreasing.
+
+
+
+
+```{r}
+data("watervoles", package = "HSAUR2")
+voles_mds <- cmdscale(watervoles, k = 13, eig = TRUE)
+voles_mds$eig
+```
+
+Note that some of the eigenvalues are negative. The criterion $P_{m}^{(1)}$ can be computed by
+```{r}
+cumsum(abs(voles_mds$eig))/sum(abs(voles_mds$eig))
+```
+
+
+and the criterion $P_{m}^{(2)}$ is
+```{r}
+cumsum((voles_mds$eig)^2)/sum((voles_mds$eig)^2)
+```
+Findings: 
+1. Here the two criteria for judging the number of dimensions necessary to give an adequate fit to the data are quite different. The second criterion would suggest that two dimensions is adequate, but use of the first would suggest perhaps that three or even four dimensions might be required.
+
+2. Here we shall be guided by the second fit index and the two-dimensional solution that can be plotted by extracting the coordinates from the points element of the voles_mds object;
+
+Fig. 4.3. Two-dimensional solution from classical multidimensional scaling of the distance matrix for water vole populations.
+```{r}
+x <- voles_mds$points[,1]
+y <- voles_mds$points[,2]
+plot(x, y, xlab = "Coordinate 1", ylab = "Coordinate 2",
+     xlim = range(x)*1.2, type = "n")
+text(x, y, labels = colnames(watervoles), cex = 0.7)
+```
+Findings: It appears that the six British populations are close to populations living in the Alps, Yugoslavia, Germany, Norway, and Pyrenees I (consisting of the species Arvicola terrestris) but rather distant from the populations in Pyrenees II, North Spain and South Spain (species Arvicola sapidus). This result would seem to imply that Arvicola terrestris might be present in Britain but it is less likely that this is so for Arvicola sapidus. But here, as the twodimensional fit may not be entirely what is needed to represent the observed distances, we shall investigate the solution in a little more detail using the minimum spanning tree.
+
+
+The minimum spanning tree is defined as follows. Suppose n points are given (possibly in many dimensions). Then a tree spanning these points (i.e., a spanning tree) is any set of straight line segments joining pairs of points such that
+❼ 0 closed loops occur,
+❼ every point is visited at least one time, and
+❼ the tree is connected (i.e., it has paths between any pairs of points).
+
+The length of the tree is defined to be the sum of the length of its segments, and when a set of n points and the lengths of all $\binom{n}{2}$ segments are given, then the minimum spanning tree is defined as the spanning tree with minimum
+length.
+
+The links of the minimum spanning tree (of the spanning tree) of the proximity matrix of interest may be plotted onto the two-dimensional scaling representation in order to identify possible distortions produced by the scaling solutions. Such distortions are indicated when nearby points on the plot are not linked by an edge of the tree.
+
+Fig. 4.4. Minimum spanning tree for the watervoles data plotted onto the classical scaling two-dimensional solution.
+```{r}
+library("ape")
+
+st <- mst(watervoles)
+
+plot(x, y, xlab = "Coordinate 1", ylab = "Coordinate 2",
+     xlim = range(x)*1.2, type = "n")
+
+for (i in 1:nrow(watervoles)) {
+     w1 <- which(st[i, ] == 1)
+     segments(x[i], y[i], x[w1], y[w1])
+ }
+
+text(x, y, labels = colnames(watervoles), cex = 0.7)
+```
+Conclusion: 
+The plot indicates, for example, that the apparent closeness of the populations in Germany and Norway, suggested by the points representing them in the MDS solution, does not accurately reflect their calculated dissimilarity; the links of the minimum spanning tree show that the Aberdeen and Elean Gamhna populations are actually more similar to the German water voles than those from Norway. This suggests that the two-dimensional solution may not give an adequate representation of the whole distance matrix.
+
+
+
+4.5 Non-metric multidimensional scaling
+1. To the search for a method of multidimensional scaling that uses only the rank order of the proximities to produce
+a spatial representation of them.
+
+2. A method was sought that would be invariant under monotonic transformations of the observed proximity matrix; i.e., the derived coordinates will remain the same if the numerical values of the observed proximities are changed but their rank order is not.
+
+3. The quintessential component of the method proposed in these papers is that the coordinates in the spatial representation of the observed proximities give rise to fitted distances, $d_{ij}$  , and that these distances are related to a set of numbers which we will call disparities, $\hat{d}_{ij}$ by the formula $d_{ij}= \hat{d}_{ij} + \epsilon _{ij}$,  where the $\epsilon _{ij}$ are error terms representing errors of measurement plus distortion errors arising because the distances do not correspond to a configuration in the particular number of dimensions chosen.
+
+4. The disparities are monotonic with the observed proximities and, subject to this constraint,
+resemble the fitted distances as closely as possible.
+
+5. In general, only a weak monotonicity constraint is applied, so that if, say, the observed dissimilarities, $\delta _{ij}$  are ranked from lowest to highest to give
+$\delta _{i1j1}<\delta _{i2j2}<...\delta _{iNjN}$,
+where $N=\frac{n(n-1)}{2}$, then 
+$\hat{d}_{i1j1}<\hat{d}_{i2j2}<...\hat{d}_{iNjN}$.
+
+6. Monotonic regression (see Barlow, Bartholomew, Bremner, and Brunk 1972) is used to find the disparities, and then the required coordinates in the spatial representation of the observed dissimilarities, which we denote by $\hat{\mathbf{X}}(n\times m)$, are found by minimising a criterion, S, known as Stress, which is a function of $\hat{\mathbf{X}}(n\times m)$ and is defined as
+$S\left ( \hat{\mathbf{X}}\right )= min\sum_{i<j}^{}(\hat{d}_{ij}-d_{ij})^{2}/\sum_{i<j}^{}d^{2}_{ij}$,
+where the minimum is taken over $\hat{d}_{ij}$ such that $\hat{d}_{ij}$ is monotonic with the observed dissimilarities.
+
+7. Stress represents the extent to which the rank order of the fitted distances disagrees with the rank order of the observed dissimilarities.
+
+8. The denominator in the formula for Stress is chosen to make the final spatial representation invariant under changes of scale; i.e., uniform stretching or shrinking. 
+
+9. An algorithm to minimise Stress and so find the coordinates of the required spatial representation is described in a second paper by Kruskal (1964b). For each value of the number of dimensions, m, in the spatial configuration, the configuration that has the smallest Stress is called the best-fitting configuration in m dimensions, Sm, and a rule of thumb for judging the fit as given by Kruskal is $S_{m}$ ≥ 20%, poor, $S_{m}$ = 10%, fair, $S_{m}$ <= 5%, good; and $S_{m}$ = 0, perfect (this only occurs if the rank order of the fitted distances matches the rank order of the observed dissimilarities and event, which is, of course, very rare in practice). 
+
+
+4.5.1 House of Representatives voting
+```{r}
+library("MASS")
+data("voting", package = "HSAUR2")
+voting_mds <- isoMDS(voting)
+```
+
+
+Fig. 4.5. Two-dimensional solution from non-metric multidimensional scaling of distance matrix for voting matrix.
+```{r}
+x <- voting_mds$points[,1]
+y <- voting_mds$points[,2]
+plot(x, y, xlab = "Coordinate 1", ylab = "Coordinate 2",
+     xlim = range(voting_mds$points[,1])*1.2, type = "n")
+text(x, y, labels = colnames(voting), cex = 0.6)
+voting_sh <- Shepard(voting[lower.tri(voting)],
+                     voting_mds$points)
+```
+Findings:
+1. The figure suggests that voting behaviour is essentially along party lines, although there is more variation among Republicans. The voting behaviour of one of the Republicans (Rinaldo) seems to be closer to his Democratic colleagues rather than to the voting behaviour of other Republicans.
+
+
+The quality of a multidimensional scaling can be assessed informally by plotting the original dissimilarities and the distances obtained from a multidimensional scaling in a scatterplot, a so-called Shepard diagram.
+
+Fig. 4.6. The Shepard diagram for the voting data shows some discrepancies between the original dissimilarities and the multidimensional scaling solution.
+```{r}
+plot(voting_sh, pch = ".", xlab = "Dissimilarity",
+     ylab = "Distance", xlim = range(voting_sh$x),
+     ylim = range(voting_sh$x))
+lines(voting_sh$x, voting_sh$yf, type = "S")
+```
+Findings:
+1. A Shepard diagram is commonly used in Multidimensional Scaling (MDS) to visualize the relationship between the dissimilarities in the original data and the distances in the lower-dimensional representation obtained through MDS.
+
+2.Axes: The x-axis labeled "Dissimilarity" represents the original dissimilarities (or distances) between items in the dataset. These could be any measure of dissimilarity, such as Euclidean distance, correlation distance, etc., depending on the context of the data.
+The y-axis labeled "Distance" represents the distances between items in the MDS space, typically a 2-dimensional space for visualization purposes.
+
+3. Points: Each point on the plot represents a pair of items from the dataset. The position of a point along the x-axis shows the original dissimilarity between the two items, and the position along the y-axis shows the distance between the same two items in the MDS representation.
+
+4.Line (Type "S"): The line connecting the points is a step function, indicated by type = "s" in the lines function call in the R code. This line helps to visualize how the original dissimilarities are transformed into distances in the MDS space. Ideally, this line should be close to a straight line at 45 degrees, indicating a perfect match between dissimilarities and distances. However, in practice, perfect matches are rare, and the step function illustrates the adjustments made by MDS to best approximate the original dissimilarities in a lower-dimensional space.
+
+
+
+Interpretation: The plot shows how well the MDS solution represents the original dissimilarities. If the points closely follow the step function line, it suggests a good fit, meaning the MDS representation preserves the original dissimilarities well. Large deviations from the step function line suggest that certain dissimilarities are not well-represented in the MDS solution, indicating areas where the dimensionality reduction may have lost significant information.

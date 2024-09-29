@@ -1,0 +1,401 @@
+---
+title: "lab 11"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_document: default
+date: "2024-04-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+8 The Analysis of Repeated Measures Data
+
+1. In this chapter, however, we will consider multivariate data of a different nature, namely data resulting from the repeated measurements of the same variable on each unit in the data set.
+
+2. Examples of such data are common in many disciplines. But before we introduce some actual
+repeated measures data sets, we need to make a small digression in order to introduce the two different “formats”, the wide and the long forms, in which such data are commonly stored and dealt with. The simplest way to do this is by way of a small example data set:
+
+
+```{r}
+library("MVA")
+
+set.seed(280875)
+
+library("lattice")
+
+library("nlme")
+
+exd <- data.frame(ID = factor(1:6), Group = gl(2, 3), 
+                  matrix(rpois(6 * 4, lambda = 10), nrow = 6))
+
+colnames(exd)[-(1:2)] <- paste("Day", c(1, 2, 5, 7), sep = ".")
+
+ex_wide <- exd
+
+ex_wide
+```
+
+3. We can pretend that these data come from a clinical trial in which individuals have been assigned to two treatment groups and have a response variable of interest recorded on days 1, 2, 5 and 7.
+
+4.  As given in this table, the data are in their wide form; each row of data corresponds to an individual and contains all the repeated measures for the individual as well as other variables that might have been recorded–in this case the treatment group of the individual.
+
+5. These data can be put into their long form, in which each row of data now corresponds to one of the repeated measurements along with the values of other variables associated with this particular measurement (for example, the time the measurement was taken) by using the reshape() function in R. The code needed to rearrange the data ex_wide into their long form is as follows:
+```{r}
+reshape(ex_wide, direction = "long", idvar = "ID", 
+        varying = colnames(ex_wide)[-(1:2)])
+#idvar = "ID": This argument specifies the variable in the 
+#wide data frame that identifies the subject or unit and 
+#will remain constant across the reshaped data.
+
+#varying: This specifies the columns in the wide data frame 
+#that we want to reshape into long format. Colnames(ex_wide)[-c(1:2)] 
+#suggests that we want to use all columns except for the first two. 
+#This is likely because the first two columns are identifiers and 
+#time variables that should not be reshaped.
+```
+6. Note that the name of the variable consists of the name itself and the time point, separated by a dot. This long form of repeated measures data is used when applying the models to be described in Section 8.2, although the wide format is often more convenient for plotting the data and computing
+summary statistics.
+
+Table 8.1: timber data. Data giving loads needed for a given slippage in eight specimens of timber, with data in “long” form.
+```{r}
+ "timber" <-
+matrix(c(0., 0., 0., 0., 0., 0., 0., 0., 2.3799999999999999, 2.6899999999999999, 2.8500000000000001, 2.46,
+         2.9700000000000002, 3.96, 3.1699999999999999, 3.3599999999999999, 4.3399999999999999, 4.75,
+         4.8899999999999997, 4.2800000000000002, 4.6799999999999997, 6.46, 5.3300000000000001, 5.4500000000000002,
+         6.6399999999999997, 7.04, 6.6100000000000003, 5.8799999999999999, 6.6600000000000001, 8.1400000000000006,
+         7.1399999999999997, 7.0800000000000001, 8.0500000000000007, 9.1999999999999993, 8.0899999999999999,
+         7.4299999999999997, 8.1099999999999994, 9.3499999999999996, 8.2899999999999991, 8.3200000000000003,
+         9.7799999999999994, 10.94, 9.7200000000000006, 8.3200000000000003, 9.6400000000000006, 10.720000000000001,
+         9.8599999999999994, 9.9100000000000001, 10.970000000000001, 12.23, 11.029999999999999, 9.9199999999999999,
+         11.06, 11.84, 11.07, 11.06, 12.050000000000001, 13.19, 12.140000000000001, 11.1, 12.25, 12.85,
+         12.130000000000001, 12.210000000000001, 12.98, 14.08, 13.18, 12.23, 13.35, 13.83, 13.15, 13.16, 13.94,
+         14.66, 14.119999999999999, 13.24, 14.539999999999999, 14.85, 14.09, 14.050000000000001, 14.74,
+         15.369999999999999, 15.09, 14.19, 15.529999999999999, 15.789999999999999, 
+15.109999999999999,
+         14.960000000000001, 16.129999999999999, 16.890000000000001, 16.68, 16.07, 17.379999999999999,
+         17.390000000000001, 16.690000000000001, 16.239999999999998, 17.98, 17.780000000000001, 17.940000000000001,
+         17.43, 18.760000000000002, 18.440000000000001, 17.690000000000001, 17.34, 19.52, 18.41, 18.219999999999999,
+         18.359999999999999, 19.809999999999999, 19.460000000000001, 18.710000000000001, 18.23, 19.969999999999999,
+         18.969999999999999, 19.399999999999999, 18.93, 20.620000000000001, 20.050000000000001, 19.539999999999999,
+         18.870000000000001)
+ , nrow = 8, ncol = 15)
+
+slippage <- c((0:10)/10, seq(from = 1.2, to = 1.8, by = 0.2))
+
+colnames(timber) <- paste("s", slippage, sep = "")
+
+timber <- as.data.frame(timber)
+
+timber$specimen <- factor(paste("spec", 1:nrow(timber), sep = ""))
+
+timber.dat <- reshape(timber, direction = "long", idvar = "specimen",
+         varying = matrix(colnames(timber)[1:15], nr = 1),
+         timevar = "slippage")
+
+names(timber.dat)[3] <- "loads"
+
+timber.dat$slippage <- slippage[timber.dat$slippage]
+
+timber <- timber.dat
+```
+7. So now let us take a look at two repeated measurement data sets that we shall be concerned with in this chapter. The first, shown in its long form in Table 8.1, is taken from Crowder (1998) and gives the loads required to produce slippage x of a timber specimen in a clamp. There are eight specimens each with 15 repeated measurements.
+
+8. The second data set, in Table 8.2 reported in Zerbe (1979) and also given in Davis (2003), consists of plasma inorganic phosphate measurements obtained from 13 control and 20 obese patients 0, 0.5, 1, 1.5, 2, and 3 hours after an oral glucose challenge.
+Table 8.2: plasma data. Plasma inorganic phosphate levels from 33 subjects, with data in “long” form.
+```{r}
+"plasma" <- 
+matrix(c(4.2999999999999998, 3.7000000000000002, 4., 3.6000000000000001, 4.0999999999999996, 3.7999999999999998,
+         3.7999999999999998, 4.4000000000000004, 5., 3.7000000000000002, 3.7000000000000002, 4.4000000000000004,
+         4.7000000000000002, 4.2999999999999998, 5., 4.5999999999999996, 4.2999999999999998, 3.1000000000000001,
+         4.7999999999999998, 3.7000000000000002, 5.4000000000000004, 3., 4.9000000000000004, 4.7999999999999998,
+         4.4000000000000004, 4.9000000000000004, 5.0999999999999996, 4.7999999999999998, 4.2000000000000002,
+         6.5999999999999996, 3.6000000000000001, 4.5, 4.5999999999999996, 3.2999999999999998, 2.6000000000000001,
+         4.0999999999999996, 3., 3.7999999999999998, 2.2000000000000002, 3., 3.8999999999999999, 4.,
+         3.1000000000000001, 2.6000000000000001, 3.7000000000000002, 3.1000000000000001, 3.2999999999999998,
+         4.9000000000000004, 4.4000000000000004, 3.8999999999999999, 3.1000000000000001, 5., 3.1000000000000001,
+         4.7000000000000002, 2.5, 5., 4.2999999999999998, 4.2000000000000002, 4.2999999999999998, 4.0999999999999996,
+         4.5999999999999996, 3.5, 6.0999999999999996, 3.3999999999999999, 4., 4.4000000000000004, 3.,
+         2.6000000000000001, 3.1000000000000001, 2.2000000000000002, 2.1000000000000001, 2., 2.3999999999999999,
+         2.7999999999999998, 3.3999999999999999, 2.8999999999999999, 2.6000000000000001, 3.1000000000000001,
+         3.2000000000000002, 3., 4.0999999999999996, 3.8999999999999999, 3.1000000000000001, 3.2999999999999998,
+         2.8999999999999999, 3.2999999999999998, 3.8999999999999999, 2.2999999999999998, 4.0999999999999996,
+         4.7000000000000002, 4.2000000000000002, 4., 4.5999999999999996, 4.5999999999999996, 3.7999999999999998,
+         5.2000000000000002, 3.1000000000000001, 3.7000000000000002, 3.7999999999999998, 2.6000000000000001,
+         1.8999999999999999, 2.2999999999999998, 2.7999999999999998, 3., 2.6000000000000001, 2.5, 2.1000000000000001,
+         3.3999999999999999, 2.2000000000000002, 2.2999999999999998, 3.2000000000000002, 3.2999999999999998,
+         2.6000000000000001, 3.7000000000000002, 3.8999999999999999, 3.1000000000000001, 2.6000000000000001, 
+         2.7999999999999998, 2.7999999999999998, 4.0999999999999996, 2.2000000000000002, 3.7000000000000002, 
+         4.5999999999999996, 3.3999999999999999, 4., 4.0999999999999996, 4.4000000000000004, 3.6000000000000001, 
+         4.0999999999999996, 2.7999999999999998, 3.2999999999999998, 3.7999999999999998, 2.2000000000000002, 
+         2.8999999999999999, 2.8999999999999999, 2.8999999999999999, 3.6000000000000001, 3.7999999999999998,
+         3.1000000000000001, 3.6000000000000001, 3.2999999999999998, 1.5, 2.8999999999999999, 3.7000000000000002,
+         3.2000000000000002, 2.2000000000000002, 3.7000000000000002, 3.7000000000000002, 3.1000000000000001,
+         2.6000000000000001, 2.2000000000000002, 2.8999999999999999, 2.7999999999999998, 2.1000000000000001,
+         3.7000000000000002, 4.7000000000000002, 3.5, 3.2999999999999998, 3.3999999999999999, 4.0999999999999996,
+         3.2999999999999998, 4.2999999999999998, 2.1000000000000001, 2.3999999999999999, 3.7999999999999998, 2.5,
+         3.2000000000000002, 3.1000000000000001, 3.8999999999999999, 3.3999999999999999, 3.6000000000000001,
+         3.3999999999999999, 3.7999999999999998, 3.6000000000000001, 2.2999999999999998, 2.2000000000000002,
+         4.2999999999999998, 4.2000000000000002, 2.5, 4.0999999999999996, 4.2000000000000002, 3.1000000000000001,
+         1.8999999999999999, 3.1000000000000001, 3.6000000000000001, 3.7000000000000002, 2.6000000000000001,
+         4.0999999999999996, 3.7000000000000002, 3.3999999999999999, 4.0999999999999996, 4.2000000000000002, 4.,
+         3.1000000000000001, 3.7999999999999998, 2.3999999999999999, 2.2999999999999998, 3.6000000000000001,
+         3.3999999999999999, 3.1000000000000001, 3.8999999999999999, 3.7999999999999998, 3.6000000000000001, 3.,
+         3.5, 4., 4., 2.7000000000000002, 3.1000000000000001, 3.8999999999999999, 3.7000000000000002,
+         2.3999999999999999, 4.7000000000000002, 4.7999999999999998, 3.6000000000000001, 2.2999999999999998, 3.5,
+         4.2999999999999998, 3.5, 3.2000000000000002, 4.7000000000000002, 3.6000000000000001, 3.7999999999999998,
+         4.2000000000000002, 4.4000000000000004, 3.7999999999999998, 3.5, 4.2000000000000002, 2.5,
+         3.1000000000000001, 3.7999999999999998, 4.4000000000000004, 3.8999999999999999, 4., 4., 3.7000000000000002,
+         3.5, 3.7000000000000002, 3.8999999999999999, 4.2999999999999998, 2.7999999999999998, 3.8999999999999999,
+         4.7999999999999998, 4.2999999999999998, 3.3999999999999999, 4.9000000000000004, 5., 4., 2.7000000000000002,
+         3.6000000000000001, 4.4000000000000004, 3.7000000000000002, 3.5, 4.9000000000000004, 3.8999999999999999,
+         4., 4.2999999999999998, 4.9000000000000004, 3.7999999999999998, 3.8999999999999999, 4.7999999999999998, 
+         3.5, 3.2999999999999998, 3.7999999999999998)
+ , nrow = 33, ncol = 8
+ ,  dimnames = list(character(0)
+ , c("T0.0", "T0.5", "T1.0", "T1.5", "T2.0", "T2.5", "T3.0", "T4.0")
+ )
+ )
+
+time <- c(0, 0.5, 1, 1.5, 2, 3, 4)
+
+plasma <- as.data.frame(plasma)
+
+plasma$Subject <- factor(paste("id", 
+     formatC(1:nrow(plasma), format = "g", width = 2, flag = "0"), sep = ""))
+
+plasma$group <- factor(c(rep("control", 20), rep("obese", 13)))
+
+plasma <- reshape(plasma, direction = "long", idvar = "Subject",
+          varying = matrix(colnames(plasma)[1:8], nr = 1),
+          timevar = "time")
+
+colnames(plasma)[4] <- "plasma"
+```
+
+9. The distinguishing feature of a repeated measures study is that the response variable of interest has been recorded several times on each unit in the data set.
+
+10. In addition, a set of explanatory variables (covariates is an alternative term that is often used in this context) are available for each; some of the explanatory variables may have been recorded only once for each unit and so take the same value for each of the repeated response values for that unit– an example would be treatment group in a clinical trial. Other explanatory variables may take different values for each of the different response variable values–an example would be age; these are sometimes called time-varying covariates.
+
+11. The main objective in such a study is to characterise change in the repeated values of the response variable and to determine the explanatory variables most associated with any change. Because several observations of the response variable are made on the same individual, it is likely that the measurements will be correlated rather than independent, even after conditioning on the explanatory variables. Consequently, repeated measures data require special methods of analysis, and models for such data need to include parameters linking the explanatory variables to the repeated measurements, parameters analogous to those in the usual multiple regression model, and, in addition, parameters that account for the correlational structure of the repeated measurements. It is the former parameters that are generally of most interest, with the latter often being regarded as nuisance parameters. But providing an adequate model for the correlational structure of the repeated measures is necessary to avoid misleading inferences about the parameters that are of most importance to the researcher.
+
+8.2 Linear mixed-effects models for repeated measures data
+
+1. Linear mixed-effects models for repeated measures data formalize the sensible idea that an individual’s pattern of responses is likely to depend on many characteristics of that individual, including some that are unobserved.
+
+2. These unobserved variables are then included in the model as random variables, that is, random effects.
+
+3. The essential feature of the model is that correlation amongst the repeated measurements on the same unit arises from shared, unobserved variables. Conditional on the values of the random effects, the repeated measurements are assumed to be independent, the so-called local independence assumption.
+
+8.2.3 Fitting random-effect models to the glucose challenge data
+
+1. Now we can move on to consider the glucose challenge data given in its long form in Table 8.2. Again we will begin by plotting the data so that we get some ideas as to what form of linear mixed-effect model might be appropriate. First we plot the raw data separately for the control and the obese groups in Figure 8.4.
+
+Fig. 8.4. Glucose challenge data for control and obese groups over time. Each line represents the trajectory of one individual.
+```{r}
+x <- reshape(plasma, direction = "wide", timevar = "time", 
+              idvar = "Subject", v.names = "plasma")
+
+X <- as.matrix(x[,-(1:2)])
+
+plot(parallelplot(~ X | group, data = x, horizontal = FALSE,
+          col = "black", scales = list(x = list(labels = 1:8)),
+          ylab = "Plasma inorganic phosphate",
+          xlab = "Time (hours after oral glucose challenge)"))
+#The plot(parallelPlot(...)) command is being used to 
+#create a parallel coordinates plot.
+
+#~ X | group: This syntax is typically used with lattice 
+#plotting functions and suggests that X is plotted separately 
+#for different levels of a group factor, but the group factor 
+#is not specified within the provided code snippet.
+
+#data = x: The dataset used for plotting is x, which was 
+#reshaped earlier.
+
+#horizontal = FALSE: The coordinates are plotted vertically.
+
+#scales = list(x = list(labels = 1:8)): This argument sets the 
+#labels for the x-axis. The code suggests there are 8 time points, 
+#but this could be incorrect if the number of time points does not
+#match the actual data.
+```
+Findings: The profiles in both groups show some curvature, suggesting that a quadratic effect of time may be needed in any model. There also appears to be some difference in the shapes of the curves in the two groups, suggesting perhaps the need to consider a group × time interaction.
+
+2. Next we plot the scatterplot matrices of the repeated measurements for the two groups using
+the code in Figure 8.5.
+
+Fig. 8.5. Scatterplot matrix for glucose challenge data.
+```{r}
+plot(splom(~ x[, grep("plasma", colnames(x))] | group, data = x, 
+             cex = 1.5, pch = ".", pscales = NULL, varnames = 1:8))
+```
+Findings: The plot indicates that the correlations of pairs of measurements made at different times differ so that the compound symmetry structure for these correlations is unlikely to be appropriate.
+
+On the basis of these plots, we will begin by fitting the model in (8.4) with the addition, in this case, of an extra covariate, namely a dummy variable coding the group, control or obese, to which a subject belongs. We can fit the required model using
+```{r}
+plasma.lme1 <- lme(plasma ~ time + I(time^2) + group,
+                   random = ~ time | Subject,   
+                   data = plasma, method = "ML")
+
+summary(plasma.lme1)
+```
+Findings: The regression coefficients for linear and quadratic time are both highly significant. The group effect is also significant, and an asymptotic 95% confidence interval for the group effect is obtained from 0.437±1.96×0.186, giving [−3.209, 4.083].
+
+Here, to demonstrate what happens if we make a very misleading assumption about the correlational structure of the repeated measurements, we will compare the results with those obtained if we assume that the repeated measurements are independent. The independence model can be fitted in the usual
+way with the lm() function
+```{r}
+summary(lm(plasma ~ time + I(time^2) + group, data = plasma))
+```
+Findings: We see that, under the independence assumption, the standard error for the group effect is about one-half of that given for model plasma.lme1 and if used would lead to a much stronger claim of evidence of a difference between control and obese patients.
+
+We will now plot the predicted values from the fitted linear mixed-effects
+model for each group using the code presented with Figure 8.6.
+
+
+Fig. 8.6. Predictions for glucose challenge data.
+```{r}
+pfun <- function(x, y, subscripts, groups) {  
+     panel.xyplot(x, y[1:length(x)], pch = c(1:2)[groups[subscripts]])
+     panel.lines(x, y[1:length(x) + length(x)], lty = 1)
+ }
+
+plasma$pred1 <- predict(plasma.lme1)
+
+plot(xyplot(cbind(plasma, pred1) ~ time | Subject, data = plasma, groups = group, 
+        type = "b",
+        pch = c(1, 2), ylab = "Plasma inorganic phosphate",
+        xlab = "Time (hours after oral glucose challenge)", panel = pfun))
+```
+We can see that the model has captured the profiles of the control group relatively well but not those of the obese group. We need to consider a further model that contains a group × time interaction.
+```{r}
+plasma.lme2 <- lme(plasma ~ time*group +I(time^2),
+                    random = ~time | Subject, 
+                    data = plasma, method = "ML")
+```
+
+The required model can be fitted and tested against the previous model using
+```{r}
+anova(plasma.lme1, plasma.lme2)
+```
+The p-value associated with the likelihood ratio test is 0.0011, indicating that the model containing the interaction term is to be preferred. The results for this model are
+```{r}
+summary(plasma.lme2)
+```
+Findings: The interaction effect is highly significant. The fitted values from this model are shown in Figure 8.7 (the code is very similar to that given for producing Figure 8.6). The plot shows that the new model has produced predicted values that more accurately reflect the raw data plotted in Figure 8.4. The predicted profiles for the obese group are “flatter” as required.
+
+Fig. 8.7. Predictions for glucose challenge data.
+```{r}
+plasma$pred2 <- predict(plasma.lme2)
+
+plot(xyplot(cbind(plasma, pred2) ~ time | Subject, data = plasma, groups = group,
+        type = "b",
+        pch = c(1, 2), ylab = "Plasma inorganic phosphate",
+        xlab = "Time (hours after oral glucose challenge)", panel = pfun))
+```
+We can check the assumptions of the final model fitted to the glucose challenge data (i.e., the normality of the random-effect terms and the residuals) by first using the random.effects() function to predict the former and the resid() function to calculate the differences between the observed data values and the fitted values and then using normal probability plots on each. The necessary R code to obtain the effects, residuals, and plots is as follows:
+```{r}
+res.int <- random.effects(plasma.lme2)[,1]
+res.slope <- random.effects(plasma.lme2)[,2]
+```
+The resulting plot is shown in Figure 8.8. The plot of the residuals is linear as required, but there is some slight deviation from linearity for each of the predicted random effects.
+
+Fig. 8.8. Probability plots of predicted random intercepts, random slopes, and residuals for the final model fitted to glucose challenge data.
+```{r}
+qqnorm(res.int,ylab="Estimated random intercepts",main="Random intercepts")
+
+qqnorm(res.slope,ylab="Estimated random slopes",main="Random slopes")
+
+resids<-resid(plasma.lme2) 
+
+qqnorm(resids,ylab="Estimated residuals",main="Residuals")
+```
+
+8.4 Dropouts in longitudinal data
+
+1. A problem that frequently occurs when collecting longitudinal data is that some of the intended measurements are, for one reason or another, not made.
+
+2. In clinical trials, for example, some patients may miss one or more protocol scheduled visits after treatment has begun and so fail to have the required outcome measure taken. There will be other patients who do not complete the intended follow-up for some reason and drop out of the study before the end date specified in the protocol. Both situations result in missing values of the outcome measure.
+
+3. In the first case, these are intermittent, but dropping out of the study implies that once an observation at a particular time point is missing, so are all the remaining planned observations. Many studies will contain missing values of both types, although in practise it is dropouts that cause the most problems when analysing the resulting data set.
+
+4. An example of a set of longitudinal data in which a number of patients have dropped out is given in Table 8.3.
+
+Table 8.3: BtheB data. Data of a randomised trial evaluating the effects of Beat the Blues.
+```{r}
+data("BtheB", package = "HSAUR2")
+```
+
+5. To begin, we shall graph the data here by plotting the boxplots of each of the five repeated measures separately for each treatment group. Assuming the data are available as the data frame BtheB, the necessary code is given with Figure 8.9.
+
+Fig. 8.9. Boxplots for the repeated measures by treatment group for the BtheB data
+```{r}
+ylim <- range(BtheB[,grep("bdi", names(BtheB))],
+               na.rm = TRUE)
+
+tau <- subset(BtheB, treatment == "TAU")[,
+     grep("bdi", names(BtheB))]
+
+boxplot(tau, main = "Treated as Usual", ylab = "BDI",
+        xlab = "Time (in months)", names = c(0, 2, 3, 5, 8),
+        ylim = ylim)
+
+btheb <- subset(BtheB, treatment == "BtheB")[,
+     grep("bdi", names(BtheB))]
+
+boxplot(btheb, main = "Beat the Blues", ylab = "BDI",
+        xlab = "Time (in months)", names = c(0, 2, 3, 5, 8),
+        ylim = ylim)
+```
+
+Figure 8.9 shows that there is a decline in BDI values in both groups, with perhaps the values in the BtheB group being lower at each post-randomisation visit. We shall fit both random intercept and random intercept and slope models to the data including the pre-BDI values, treatment group, drugs, and length as fixed-effect covariates. First we need to rearrange the data into the long form using the following code:
+```{r}
+BtheB$subject <- factor(rownames(BtheB))
+nobs <- nrow(BtheB)
+BtheB_long <- reshape(BtheB, idvar = "subject",
+ varying = c("bdi.2m", "bdi.3m", "bdi.5m", "bdi.8m"),
+ direction = "long")
+BtheB_long$time <- rep(c(2, 3, 5, 8), rep(nobs, 4))
+```
+
+The resulting data frame BtheB_long contains a number of missing values, and in applying the lme() function these will need to be dropped. But notice it is only the missing values that are removed, not participants that have at least one missing value. All the available data are used in the model-fitting process. We can fit the two models and test which is most appropriate using
+```{r}
+BtheB_lme1 <- lme(bdi ~ bdi.pre + time + treatment + drug +
+ length, random = ~ 1 | subject, data = BtheB_long,
+ na.action = na.omit)
+BtheB_lme2 <- lme(bdi ~ bdi.pre + time + treatment + drug +
+ length, random = ~ time | subject, data = BtheB_long,
+ na.action = na.omit)
+```
+
+```{r}
+anova(BtheB_lme1, BtheB_lme2)
+```
+Clearly, the simpler random intercept model is adequate for these data. The results from this model can be found using
+```{r}
+summary(BtheB_lme1)
+```
+Findings: The effect of most interest in this study is, of course, the treatment effect, and our analysis shows that this is not significant at the 5% level. The only effect that is significant is time, the negative value of its regression coefficient showing that the BDI values decline over the eight months of the study.
+
+6. We now need to consider briefly how the dropouts may affect the analyses reported above. To understand the problems that patients dropping out can cause for the analysis of data from a longitudinal trial, we need to consider a classification of dropout mechanisms first introduced by Rubin (1976). The type of mechanism involved has implications for which approaches to analysis are suitable and which are not. Rubin’s suggested classification involves three types of dropout mechanisms:
+
+(1) Dropout completely at random (DCAR). Here the probability that a patient drops out does not depend on either the observed or missing values of the response. Consequently, the observed (non-missing) values effectively constitute a simple random sample of the values for all subjects. Possible examples include missing laboratory measurements because of a dropped test tube (if it was not dropped because of the knowledge of any measurement), the accidental death of a participant in a study, or a participant moving to another area. Intermittent missing values in a longitudinal data set, whereby a patient misses a clinic visit for transitory reasons (“went shopping instead” or the like) can reasonably be assumed to be DCAR. Completely random dropout causes the least problems for data analysis, but it is a strong assumption.
+
+(2) Dropout at random (DAR). The dropout at random mechanism occurs when the probability of dropping out depends on the outcome measures that have been observed in the past but given this information is conditionally independent of all the future (unrecorded) values of the outcome variable following dropout. Here “missingness” depends only on the observed data, with the distribution of future values for a subject who drops out at a particular time being the same as the distribution of the future values of a subject who remains in at that time, if they have the same covariates and the same past history of outcome up to and including the specific time point. 
+
+(3) Non-ignorable (sometimes referred to as informative). The final type of dropout mechanism is one where the probability of dropping out depends on the unrecorded missing values observations are likely to be missing when the outcome values that would have been observed had the patient not dropped out are systematically higher or lower than usual (corresponding perhaps to their condition becoming worse or improving). 
+
+Fig. 8.10. Distribution of BDI values for patients who do (circles) and do not (bullets) attend the next scheduled visit.
+```{r}
+bdi <- BtheB[, grep("bdi", names(BtheB))]
+plot(1:4, rep(-0.5, 4), type = "n", axes = FALSE,
+ ylim = c(0, 50), xlab = "Months", ylab = "BDI")
+axis(1, at = 1:4, labels = c(0, 2, 3, 5))
+axis(2)
+for (i in 1:4) {
+ dropout <- is.na(bdi[,i + 1])
+ points(rep(i, nrow(bdi)) + ifelse(dropout, 0.05, -0.05),
+ jitter(bdi[,i]), pch = ifelse(dropout, 20, 1))
+ }
+```

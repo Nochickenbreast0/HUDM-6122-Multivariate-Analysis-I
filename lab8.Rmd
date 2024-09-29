@@ -1,0 +1,333 @@
+---
+title: "lab8"
+date: "2024-03-27"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+install.packages("ellipse")
+```
+
+4.6 Correspondence analysis
+1. A form of multidimensional scaling known as correspondence analysis, which is essentially an approach to constructing a spatial model that displays the associations among a set of categorical variables, will be the subject of this section. 
+
+2. Nowadays the method is used rather more widely and is often applied to supplement, say, a standard chi-squared test of independence for two categorical variables forming a contingency table.
+
+3. Mathematically, correspondence analysis can be regarded as either
+(1) a method for decomposing the chi-squared statistic used to test for independence in a contingency table into components corresponding to different dimensions of the heterogeneity between its columns, or
+(2) a method for simultaneously assigning a scale to rows and a separate scale to columns so as to maximise the correlation between the two scales.
+
+4. Correspondence analysis is a technique for displaying multivariate (most often bivariate) categorical data graphically by deriving coordinates to represent the categories of both the row and column variables, which may then be plotted so as to display the pattern of association between the variables graphically.
+
+5. The general two-dimensional contingency table in which there are r rows and c columns can be written as
+```{r}
+library(knitr)
+include_graphics("E:/HUDM 6122/CA.png")
+```
+
+using an obvious dot notation for summing the counts in the contingency table over rows or over columns. From this table we can construct tables of column proportions and row proportions given by
+Column proportions $p_{ij}^{c}=n_{ij} / n_{\cdot j}$,
+Row proportions $p_{ij}^{r}=n_{ij} / n_{i\cdot }$.
+
+6. What is known as the chi-squared distance between columns i and j is defined as
+$d_{ij}^{cols}=\sum_{k=1}^{r}\frac{1}{p_{k\cdot}}(p_{ki}^{c}-p_{kj}^{c})^2$,
+where $p_{k\cdot}= n_{k\cdot} /n$.
+
+7. The chi-square distance is seen to be a weighted Euclidean distance based on column proportions. It will be zero if the two columns have the same values for these proportions. It can also be seen from the weighting factors, $1/p_{k\cdot}$, that rare categories of the column variable have a greater influence on the
+distance than common ones.
+
+8. A similar distance measure can be defined for rows i and j as
+$d_{ij}^{rows}=\sum_{k=1}^{r}\frac{1}{p_{\cdot k}}(p_{ik}^{r}-p_{jk}^{r})^2$, where
+$p_{\cdot k}= n_{\cdot k} /n$.
+
+9. A correspondence analysis“map”of the data can be found by applying classical MDS to each distance matrix in turn and plotting usually the first two coordinates for column categories and those for row categories on the same diagram, suitably labelled to differentiate the points representing row categories from those representing column categories. The resulting diagram is interpreted by examining the positions of the points representing the row categories and the column categories. The relative values of the coordinates of these points reflect associations between the categories of the row variable and the categories of the column variable.
+
+10. Assuming that a two-dimensional solution provides an adequate fit for the data (see Greenacre 1992), row points that are close together represent row categories that have similar profiles (conditional distributions) across columns. Column points that are close together indicate columns with similar profiles (conditional distributions) down the rows. Finally, row points that lie close to column points represent a row/column combination that occurs more frequently in the table than would be expected if the row and column variables were independent. Conversely, row and column points that are distant from one another indicate a cell in the table where the count is lower than would be expected under independence. 
+
+4.6.1 Teenage relationships
+```{r}
+library("MVA")
+teensex <- xtabs(Freq ~ Boyfriend + Age, data = teensex)
+teensex
+```
+In this table, each of 139 girls has been classified into one of three groups:
+no boyfriend;
+boyfriend/no sexual intercourse; or
+boyfriend/sexual intercourse.
+
+The calculation of the two-dimensional classical multidimensional scaling solution based on the row- and column-wise chi-squared distance measure can be computed via cmdscale(); however, we first have to compute the necessary row and column distance matrices, and we will do this by setting up a small convenience function as follows
+```{r}
+D <- function(x) {
+ a <- t(t(x) / colSums(x))
+ #The matrix x is transposed with t(x), and each element is divided by 
+ #the sum of its original column (colSums(x)), effectively normalizing each column of x
+ ret <- sqrt(colSums((a[,rep(1:ncol(x), ncol(x))] -
+ a[, rep(1:ncol(x), rep(ncol(x), ncol(x)))])^2 *
+ sum(x) / rowSums(x)))
+ # compute a variance-weighted distance from the mean for each column,
+ matrix(ret, ncol = ncol(x))
+ }
+
+```
+
+```{r}
+(dcols <- D(teensex))
+```
+
+```{r}
+(drows <- D(t(teensex)))
+```
+
+Applying classical MDS to each of these distance matrices gives the required two-dimensional coordinates with which to construct our “map” of the data. Plotting those with suitable labels and with the axes suitably scaled to reflect the greater variation on dimension one than on dimension two (see Greenacre 1992) is achieved using the R code presented with Figure 4.8.
+
+Fig. 4.8. Correspondence analysis for teenage relationship data.
+```{r}
+r1 <- cmdscale(dcols, eig = TRUE)
+c1 <- cmdscale(drows, eig = TRUE)
+plot(r1$points, xlim = range(r1$points[,1], c1$points[,1]) * 1.5,
+     ylim = range(r1$points[,1], c1$points[,1]) * 1.5, type = "n",
+     xlab = "Coordinate 1", ylab = "Coordinate 2", lwd = 2)
+text(r1$points, labels = colnames(teensex), cex = 0.7)
+text(c1$points, labels = rownames(teensex), cex = 0.7)
+abline(h = 0, lty = 2)
+abline(v = 0, lty = 2)
+
+
+```
+
+Interpretation:
+Axes (Coordinates)
+Coordinate 1 and Coordinate 2: These are the principal dimensions extracted from the data that explain the maximum variance (or inertia) possible by a two-dimensional representation. The first coordinate typically captures the most significant pattern of variability, while the second captures the next most significant pattern.
+
+Points on the Plot
+Categories: Each point on the plot represents a category from either the rows or columns of the input contingency table. In the plot, these categories seem to include age groups (e.g., "16-17", "17-18") and relationship/sexual activity statuses (e.g., "Boyfriend no sex", "No boyfriend").
+
+Distance Between Points: The closer two points are to each other, the more similar their profiles are in terms of the original data. For instance, if two age groups are close to each other, it suggests they have similar patterns of relationship status or sexual activity.
+
+Quadrants: The plot is divided into four quadrants by the horizontal and vertical lines crossing at zero. Categories in the same quadrant are more related to each other than to those in different quadrants.
+
+Relative Position to Axes: Points that are far from the origin along Coordinate 1 (horizontal axis) but close to zero on Coordinate 2 (vertical axis) are primarily differentiated by the pattern captured in the first dimension. Similarly, points far from the origin along Coordinate 2 but close to zero on Coordinate 1 are primarily differentiated by the pattern captured in the second dimension.
+
+From Textbook: The points representing the age groups in Figure 4.8 give a two-dimensional representation in which the Euclidean distance between two points represents the chi-squared distance between the corresponding age groups (and similarly for the points representing the type of relationship). For a contingency table with r rows and c columns, it can be shown that the chi-squared distances can be represented exactly in min r − 1, c − 1 dimensions; here, since r = 3 and c = 5, this means that the Euclidean distances in Figure 4.8 will actually equal the corresponding chi-squared distances (readers might like to check that this is the case as an exercise). When both r and c are greater than three, an exact two-dimensional representation of the chi-squared distances is not possible. In such cases, the derived two-dimensional coordinates will give only an approximate representation, and so the question of the adequacy of the fit will need to be addressed. In some of these cases, more than two dimensions may be required to give an acceptable fit (again see Greenacre 1992, for details). Examining the plot in Figure 4.8, we see that it tells the age-old story of girls travelling through their teenage years, initially having no boyfriend, then acquiring a boyfriend, and then having sex with their boyfriend, a story that has broken the hearts of fathers everywhere, at least temporarily, until their wives suggest they reflect back to the time when they themselves were teenagers.
+
+
+
+6.4 K-means clustering
+1. The k-means clustering technique seeks to partition the n individuals in a set of multivariate data into k groups or clusters, $(G_{1},G_{2},...,G_{k})$, where $G_{i}$ denotes the set of $n_{i}$ individuals in the ith group, and k is given (or a possible range is specified by the researcher–the problem of choosing the “true” value of k will be taken up later) by minimizing some numerical criterion, low values of which are considered indicative of a “good” solution. 
+
+2. The most commonly used implementation of k-means clustering is one that tries to find the partition of the n individuals into k groups that minimizes the within-group sum of squares (WGSS) over all variables; explicitly, this criterion is 
+$WGSS=\sum_{j=1}^{q} \sum_{l=1}^{k}\sum_{i\in G_{l} }^{}(x_{ij}-\bar{x}_{j}^{(l)})^2$, where 
+$\bar{x}_{j}^{(l)}= \frac{1}{n_{i}}\sum_{i\in G_{l}}^{}x_{ij}$ is the mean of the individuals in group $G_{l}$ on variable j.
+
+3. Consider every possible partition of the n individuals into k groups, and select the one with the lowest within-group sum of squares. 
+
+```{r}
+library(knitr)
+include_graphics("E:/HUDM 6122/Table6.2.png")
+```
+Understanding the Table
+n (Sample Size): This column lists different sizes of the dataset.
+k (Number of Clusters): This column shows the number of clusters into which the dataset is partitioned.
+Number of Possible Partitions: This column gives the total number of ways the dataset of size n can be partitioned into  k clusters.
+
+4. The impracticability of examining every possible partition has led to the development of algorithms designed to search for the minimum values of the clustering criterion by rearranging existing partitions and keeping the new one only if it provides an improvement. Such algorithms do not, of course, guarantee finding the global minimum of the criterion. The essential steps in these algorithms are as follows:
+(1). Find some initial partition of the individuals into the required number of groups. (Such an initial partition could be provided by a solution from one of the hierarchical clustering techniques described in the previous section.)
+(2). Calculate the change in the clustering criterion produced by“moving”each individual from its own cluster to another cluster.
+(3). Make the change that leads to the greatest improvement in the value of the clustering criterion.
+(4). Repeat steps (2) and (3) until no move of an individual causes the clustering criterion to improve.
+
+5. The k-means approach to clustering using the minimisation of the withingroup sum of squares over all the variables is widely used but suffers from the two problems of (1) not being scale-invariant (i.e., different solutions may result from clustering the raw data and the data standardised in some way) and (2) of imposing a “spherical” structure on the data; i.e., it will find clusters shaped like hyper-footballs even if the “true” clusters in the data are of some other shape.
+
+6. The method we shall use in the forthcoming example is to plot the within-groups sum of squares associated with the k-means solution for each number of groups. As the number of groups increases the sum of squares will necessarily decrease, but an obvious “elbow” in the plot may be indicative of the most useful solution for the investigator to look at in detail.
+
+6.4.1 Clustering the states of the USA on the basis of their crime rate profiles
+The Statistical Abstract of the USA (Anonymous 1988, Table 265) gives rates of different types of crime per 100,000 residents of the 50 states of the USA plus the District of Columbia for the year 1986.
+```{r}
+crime <- 
+  structure(c(2, 2.2, 2, 3.6, 3.5, 4.6, 10.7, 5.2, 5.5, 5.5, 6,
+ 8.9, 11.3, 3.1, 2.5, 1.8, 9.2, 1, 4, 3.1, 4.4, 4.9, 9, 31, 7.1,
+ 5.9, 8.1, 8.6, 11.2, 11.7, 6.7, 10.4, 10.1, 11.2, 8.1, 12.8,
+ 8.1, 13.5, 2.9, 3.2, 5.3, 7, 11.5, 9.3, 3.2, 12.6, 5, 6.6, 11.3,
+ 8.6, 4.8, 14.8, 21.5, 21.8, 29.7, 21.4, 23.8, 30.5, 33.2, 25.1,
+ 38.6, 25.9, 32.4, 67.4, 20.1, 31.8, 12.5, 29.2, 11.6, 17.7, 24.6,
+ 32.9, 56.9, 43.6, 52.4, 26.5, 18.9, 26.4, 41.3, 43.9, 52.7, 23.1,
+ 47, 28.4, 25.8, 28.9, 40.1, 36.4, 51.6, 17.3, 20, 21.9, 42.3,
+ 46.9, 43, 25.3, 64.9, 53.4, 51.1, 44.9, 72.7, 31, 28, 24, 22,
+ 193, 119, 192, 514, 269, 152, 142, 90, 325, 301, 73, 102, 42,
+ 170, 7, 16, 51, 80, 124, 304, 754, 106, 41, 88, 99, 214, 367,
+ 83, 208, 112, 65, 80, 224, 107, 240, 20, 21, 22, 145, 130, 169,
+ 59, 287, 135, 206, 343, 88, 106, 102, 92, 103, 331, 192, 205,
+ 431, 265, 176, 235, 186, 434, 424, 162, 148, 179, 370, 32, 87,  
+ 184, 252, 241, 476, 668, 167, 99, 354, 525, 319, 605, 222, 274, 
+ 408, 172, 278, 482, 285, 354, 118, 178, 243, 329, 538, 437, 180,
+ 354, 244, 286, 521, 401, 103, 803, 755, 949, 1071, 1294, 1198,
+ 1221, 1071, 735, 988, 887, 1180, 1509, 783, 1004, 956, 1136,
+ 385, 554, 748, 1188, 1042, 1296, 1728, 813, 625, 1225, 1340,
+ 1453, 2221, 824, 1325, 1159, 1076, 1030, 1461, 1787, 2049, 783,
+ 1003, 817, 1792, 1845, 1908, 915, 1604, 1861, 1967, 1696, 1162,
+ 1339, 2347, 2208, 2697, 2189, 2568, 2758, 2924, 2822, 1654, 2574,
+ 2333, 2938, 3378, 2802, 2785, 2801, 2500, 2049, 1939, 2677, 3008,
+ 3090, 2978, 4131, 2522, 1358, 2423, 2846, 2984, 4373, 1740, 2126,
+ 2304, 1845, 2305, 3417, 3142, 3987, 3314, 2800, 3078, 4231, 3712,
+ 4337, 4074, 3489, 4267, 4163, 3384, 3910, 3759, 164, 228, 181,
+ 906, 705, 447, 637, 776, 354, 376, 328, 628, 800, 254, 288, 158,
+ 439, 120, 99, 168, 258, 272, 545, 975, 219, 169, 208, 277, 430,
+ 598, 193, 544, 267, 150, 195, 442, 649, 714, 215, 181, 169, 486,
+ 343, 419, 223, 478, 315, 402, 762, 604, 328), .Dim = c(51L, 7L
+ ), .Dimnames = list(c("ME", "NH", "VT", "MA", "RI", "CT", "NY",
+ "NJ", "PA", "OH", "IN", "IL", "MI", "WI", "MN", "IA", "MO", "ND",
+ "SD", "NE", "KS", "DE", "MD", "DC", "VA", "WV", "NC", "SC", "GA",
+ "FL", "KY", "TN", "AL", "MS", "AR", "LA", "OK", "TX", "MT", "ID",
+ "WY", "CO", "NM", "AZ", "UT", "NV", "WA", "OR", "CA", "AK", "HI"
+ ), c("Murder", "Rape", "Robbery", "Assault", "Burglary", "Theft", "Vehicle")))
+
+crime <- as.data.frame(crime)
+```
+
+Fig. 6.7. Scatterplot matrix of crime data.
+```{r}
+plot(crime, pch = ".", cex = 1.5)
+```
+The plot suggests that at least one of the cities is considerably different from the others in its murder rate at least. The city is easily identified using
+
+```{r}
+subset(crime, Murder > 15)
+```
+Findings: the murder rate is very high in the District of Columbia. In order to check if the other crime rates are also higher in DC, we label the corresponding points in the scatterplot matrix in Figure 6.8. Clearly, DC is rather extreme in most crimes (the clear message is don’t live in DC).
+
+Fig. 6.8. Scatterplot matrix of crime data with DC observation labelled using a plus sign.
+```{r}
+plot(crime, pch = c(".", "+")[(rownames(crime) == "DC") + 1], cex = 1.5)
+```
+We will now apply k-means clustering to the crime rate data after removing the outlier, DC. If we first calculate the variances of the crime rates for the different types of crimes we find the following:
+```{r}
+sapply(crime, var)
+```
+Findings: The variances are very different, and using k-means on the raw data would not be sensible; we must standardize the data in some way, and here we standardize each variable by its range. After such standardization, the variances become:
+```{r}
+rge <- sapply(crime, function(x) diff(range(x)))
+#The result, rge, is a vector containing the range of each column.
+crime_s <- sweep(crime, 2, rge, FUN = "/")
+#This line is intended to scale the data in crime by its range.
+sapply(crime_s, var)
+```
+
+The variances of the standardised data are very similar, and we can now progress with clustering the data. First we plot the within-groups sum of squares for one- to six-group solutions to see if we can get any indication of
+the number of groups. The plot is shown in Figure 6.9. 
+Fig. 6.9. Plot of within-groups sum of squares against number of clusters.
+```{r}
+n <- nrow(crime_s)
+wss <- rep(0, 6)
+#wss <- rep(0, 6): Initializes a vector wss (Within Sum of Squares) 
+#of length 6 with zeros. This vector will store the sum of squared 
+#distances of samples to their closest cluster center for 
+#different numbers of clusters.
+wss[1] <- (n - 1) * sum(sapply(crime_s, var))
+#Calculates the total variance for the dataset as 
+#if there was only one cluster.
+  for (i in 2:6)
+#The for loop runs k-means clustering for i clusters 
+#(i ranging from 2 to 6) and calculates the WSS for 
+#each number of clusters.
+     wss[i] <- sum(kmeans(crime_s,
+                          centers = i)$withinss)
+#performs k-means clustering on crime_s with i centers 
+#and extracts the within-cluster sum of squares.
+
+plot(1:6, wss, type = "b", xlab = "Number of groups",
+     ylab = "Within groups sum of squares")
+
+```
+
+Findings: The only “elbow” in the plot occurs for two groups, and so we will now look at the two-group solution.
+The group means for two groups are computed by
+```{r}
+kmeans(crime_s, centers = 2)$centers * rge
+```
+
+A plot of the two-group solution in the space of the first two principal components of the correlation matrix of the data is shown in Figure 6.10.
+
+Fig. 6.10. Plot of k-means two-group solution for the standardised crime rate data.
+```{r}
+crime_pca <- prcomp(crime_s)
+
+plot(crime_pca$x[, 1:2], 
+     pch = kmeans(crime_s, centers = 2)$cluster)
+#pch = kmeans(crime_s, centers = 2)$cluster: This part performs 
+#k-means clustering on the crime_s dataset, specifying that the 
+#data should be partitioned into 2 clusters. The $cluster part 
+#extracts the cluster membership for each data point from the 
+#k-means result. This cluster membership is then used as the 
+#plotting character (pch) in the plot, meaning that points 
+#belonging to different clusters will have different symbols.
+```
+Interpretation:
+Principal Components (PCs): PC1 (x-axis) represents the direction of maximum variance in the data. Moving along this axis, we can observe the most significant change in the data features represented by this component. PC2 (y-axis) represents the direction of the second most variance, orthogonal (at a right angle) to PC1. This captures the next highest variance in the data not already accounted for by PC1.
+
+Data Distribution: The plot shows how the original multidimensional data has been transformed into a new coordinate system defined by PC1 and PC2. Points close together are similar according to the original variables, while points far apart are dissimilar.
+
+Clusters or Groups: The circles and triangles likely represent two distinct groups or clusters within the dataset. The separation between these two sets of points suggests that these groups have different characteristics in the multidimensional space of the original data, which PCA has helped to highlight even in just two dimensions.
+
+Group Characteristics: Points represented by circles are more concentrated and primarily located on the negative side along PC1, suggesting these data points share similar properties that differ from the points represented by triangles. Points represented by triangles are more spread out and primarily located on the positive side along PC1, indicating a different set of properties or characteristics that distinguish them from the circle group.
+Variance Explained:
+
+The variance explained by PC1 and PC2 (not provided in the plot but usually given in PCA results) tells us how much of the total dataset's variance is captured by the plot. High percentages indicate that the plot effectively represents the dataset's variability.
+
+6.4.2 Clustering Romano-British pottery
+We begin by computing the Euclidean distance matrix for the standardised measurements of the 45 pots. The resulting 45 × 45 matrix can be inspected graphically by using an image plot, here obtained with the function levelplot available in the package lattice
+
+Fig. 6.11. Image plot of the dissimilarity matrix of the pottery data.
+```{r}
+pottery_dist <- dist(pots <- scale(pottery[, colnames(pottery) != "kiln"], 
+                                   center = FALSE))
+library("lattice")
+levelplot(as.matrix(pottery_dist), xlab = "Pot Number",
+          ylab = "Pot Number")
+```
+Findings: 
+1. Such a plot associates each cell of the dissimilarity matrix with a colour or a grey value. We choose a very dark grey for cells with distance zero (i.e., the diagonal elements of the dissimilarity matrix) and pale values for cells with greater Euclidean distance.
+2. Figure 6.11 leads to the impression that there are at least three distinct groups with small inter-cluster differences (the dark rectangles), whereas much larger distances can be observed for all other cells.
+
+
+We plot the within-groups sum of squares for one to six group k-means solutions to see if we can get any indication of the number of groups (see Figure 6.12). Again, the plot leads to the relatively clear conclusion that the data contain three clusters.
+Fig. 6.12. Plot of within-groups sum of squares against number of clusters.
+```{r}
+n <- nrow(pots)
+
+wss <- rep(0, 6)
+
+wss[1] <- (n - 1) * sum(sapply(pots, var))
+
+  for (i in 2:6)
+     wss[i] <- sum(kmeans(pots,
+                          centers = i)$withinss)
+
+plot(1:6, wss, type = "b", xlab = "Number of groups",   
+      ylab = "Within groups sum of squares")
+```
+
+
+
+Our interest is now in a comparison of the kiln sites at which the pottery was found.
+```{r}
+pottery_cluster <- kmeans(pots, centers = 3)$cluster
+xtabs(~ pottery_cluster + kiln, data = pottery)
+#It creates a contingency table, cross-tabulating the cluster 
+#assignments against the kiln sites (kiln) where the pottery was found.
+```
+
+Findings: The contingency table shows that cluster 1 contains all pots found at kiln site number one, cluster 2 contains all pots from kiln sites numbers two and three, and cluster three collects the ten pots from kiln sites four and five. In fact, the five kiln sites are from three different regions: region 1 contains just kiln one, region 2 contains kilns two and three, and region 3 contains kilns four and five. So the clusters found actually correspond to pots from three different regions.
+
+
+Fig. 6.13. Plot of the k-means three-group solution for the pottery data displayed in the space of the first two principal components of the correlation matrix of the data.
+```{r}
+pots_pca <- prcomp(pots)
+
+plot(pots_pca$x[, 1:2], 
+     pch = kmeans(pots, centers = 3)$cluster)
+```

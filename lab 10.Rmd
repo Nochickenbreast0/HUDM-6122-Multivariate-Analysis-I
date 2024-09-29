@@ -1,0 +1,318 @@
+---
+title: "lab 10"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_document: default
+date: "2024-04-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+library("MVA")
+
+set.seed(280875)
+
+library("lattice")
+
+library("sem")
+```
+
+
+```{r, echo=FALSE}
+library(MVA)
+library("sem")
+demo("Ch-SEM")
+```
+
+7.3.2 A confirmatory factor analysis model for drug use
+
+
+The model involved the following three latent variables:
+
+
+f1: Alcohol use, with non-zero loadings on beer, wine, spirits, and cigarette use.
+
+
+f2: Cannabis use, with non-zero loadings on marijuana, hashish, cigarette, and wine use. The cigarette variable is assumed to load on both the first and second latent variables because it sometimes occurs with both alcohol and marijuana use and at other times does not. The non-zero loading on wine was allowed because of reports that wine is frequently used with marijuana and that consequently some of the use of wine might be an indicator of tendencies toward cannabis use.
+
+
+f3: Hard drug use, with non-zero loadings on amphetamines, tranquillizers, hallucinogenics, hashish, cocaine, heroin, drug store medication, inhalants, and spirits. The use of each of these substances was considered to suggest a strong commitment to the notion of psychoactive drug use.
+
+
+Each pair of latent variables is assumed to be correlated so that thesecorrelations are allowed to be free parameters that need to be estimated. 
+
+
+The variance of each latent variance must, however, be fixed–they are not free parameters that can be estimated–and here as usual we will specify that each of these variances takes the value one. So the proposed model can be specified by the following series of equations:
+
+\begin{align*}
+\text{cigarettes} &= \lambda_1 f_1 + \lambda_2 f_2 + \theta_3 f_3 + u_1, \\
+\text{beer} &= \lambda_3 f_1 + \theta_2 f_2 + \theta_3 f_3 + u_2, \\
+\text{wine} &= \lambda_4 f_1 + \lambda_5 f_2 + \theta_3 f_3 + u_3, \\
+\text{spirits} &= \lambda_6 f_1 + \theta_2 f_2 + \lambda_7 f_3 + u_4, \\
+\text{cocaine} &= \theta_1 f_1 + \theta_2 f_2 + \lambda_8 f_3 + u_5, \\
+\text{tranquilizers} &= \theta_1 f_1 + \theta_2 f_2 + \lambda_9 f_3 + u_6, \\
+\text{drug store medication} &= \theta_1 f_1 + \theta_2 f_2 + \lambda_{10} f_3 + u_7, \\
+\text{heroin} &= \theta_1 f_1 + \theta_2 f_2 + \lambda_{11} f_3 + u_8, \\
+\text{marijuana} &= \theta_1 f_1 + \lambda_{12} f_2 + \theta_3 f_3 + u_9, \\
+\text{inhalants} &= \theta_1 f_1 + \theta_2 f_2 + \lambda_{13} f_3 + u_{11}, \\
+\text{hallucinogenics} &= \theta_1 f_1 + \theta_2 f_2 + \lambda_{14} f_3 + u_{12}, \\
+\text{amphetamines} &= \theta_1 f_1 + \theta_2 f_2 + \lambda_{15} f_3 + u_{13}.
+\end{align*}
+
+
+
+The proposed model also allows for non-zero correlations between each pair of latent variables and so has a total of 33 parameters to estimate –17 loadings $(λ_{1}) \enspace to \enspace λ_{17})$, 13 specific variances $(ψ_{1}\enspace to \enspace ψ_{13})$, and three correlations between latent variables $(ρ1 \enspace to \enspace ρ3)$. Consequently, the model has 91−33 = 58 degrees of freedom. We first abbreviate the names of the variables via
+```{r}
+d <-
+ c(0.447,       
+   0.422, 0.619,       
+   0.435, 0.604, 0.583,         
+   0.114, 0.068, 0.053, 0.115,  
+   0.203, 0.146, 0.139, 0.258, 0.349,          
+   0.091, 0.103, 0.110, 0.122, 0.209, 0.221,
+   0.082, 0.063, 0.066, 0.097, 0.321, 0.355, 0.201,
+   0.513, 0.445, 0.365, 0.482, 0.186, 0.315, 0.150, 0.154,
+   0.304, 0.318, 0.240, 0.368, 0.303, 0.377, 0.163, 0.219, 0.534,
+   0.245, 0.203, 0.183, 0.255, 0.272, 0.323, 0.310, 0.288, 0.301, 0.302,
+   0.101, 0.088, 0.074, 0.139, 0.279, 0.367, 0.232, 0.320, 0.204, 0.368, 0.340,
+   0.245, 0.199, 0.184, 0.293, 0.278, 0.545, 0.232, 0.314, 0.394, 0.467, 0.392, 0.511)
+druguse <- diag(13) / 2
+
+druguse[upper.tri(druguse)] <- d
+
+druguse <- druguse + t(druguse)
+
+rownames(druguse) <- colnames(druguse) <- c("cigarettes", "beer", "wine", "liquor", "cocaine", 
+        "tranquillizers", "drug store medication", "heroin", 
+        "marijuana", "hashish", "inhalants", "haluucinogenics", "amphetamine")
+```
+
+To fit the model, we can use the R code 
+```{r}
+mod <- c("Alcohol   -> Cigs, lambda1, NA",
+          "Alcohol   -> Beer, lambda3, NA",
+          "Alcohol   -> Wine, lambda4, NA",
+          "Alcohol   -> Liqr, lambda6, NA",
+          "Cannabis  -> Cigs, lambda2, NA",
+          "Cannabis  -> Wine, lambda5, NA",
+          "Cannabis  -> Marj, lambda12, NA",
+          "Cannabis  -> Hash, lambda13, NA",
+          "Hard      -> Liqr, lambda7, NA",
+          "Hard      -> Cocn, lambda8, NA",
+          "Hard      -> Tran, lambda9, NA",
+          "Hard      -> Drug, lambda10, NA",
+          "Hard      -> Hern, lambda11, NA",
+          "Hard      -> Hash, lambda14, NA",
+          "Hard      -> Inhl, lambda15, NA",
+          "Hard      -> Hall, lambda16, NA",
+          "Hard      -> Amph, lambda17, NA",
+          "Cigs     <-> Cigs, theta1, NA",
+          "Beer     <-> Beer, theta2, NA",
+          "Wine     <-> Wine, theta3, NA",
+          "Liqr     <-> Liqr, theta4, NA",
+          "Cocn     <-> Cocn, theta5, NA",
+          "Tran     <-> Tran, theta6, NA",
+          "Drug     <-> Drug, theta7, NA",
+          "Hern     <-> Hern, theta8, NA",
+          "Marj     <-> Marj, theta9, NA",
+          "Hash     <-> Hash, theta10, NA",
+          "Inhl     <-> Inhl, theta11, NA",
+          "Hall     <-> Hall, theta12, NA",
+          "Amph     <-> Amph, theta13, NA",
+          "Alcohol  <-> Alcohol, NA, 1",
+          "Cannabis <-> Cannabis, NA, 1",
+          "Hard     <-> Hard, NA, 1",
+          "Alcohol  <-> Cannabis, rho1, NA",
+          "Alcohol  <-> Hard, rho2, NA",
+          "Cannabis <-> Hard, rho3, NA")
+```
+
+```{r}
+rownames(druguse) <- colnames(druguse) <- c("Cigs", 
+     "Beer", "Wine", "Liqr", "Cocn", "Tran", "Drug", 
+     "Hern", "Marj", "Hash", "Inhl", "Hall", "Amph")
+```
+
+```{r}
+druguse_model <- specifyModel(text = mod)
+druguse_sem <- sem(druguse_model, druguse, 1634)
+```
+The results of fitting the proposed model are
+```{r}
+summary(druguse_sem)
+```
+Here the chi-square test for goodness of fit takes the value 324.092, which with 58 degrees of freedom has an associated p-value that is very small; the model does not appear to fit very well. But before we finally decide that the fitted model is unsuitable for the data, we should perhaps investigate its fit in other ways. Here we will look at the differences of the elements of the observed covariance matrix and the covariance matrix of the fitted model. We can find these differences using the following R code:
+```{r}
+round(druguse_sem$S - druguse_sem$C, 3)
+```
+Interpretations:
+1. Magnitude of the Values: The further these values are from zero, the greater the discrepancy between the model's predictions and the actual data. A well-fitting model will have mostly small values (both positive and negative) because its implied covariance matrix will be similar to the observed covariance matrix.
+
+2. Pattern of the Values: A systematic pattern of discrepancies might indicate a particular misspecification in the model. For instance, if the discrepancies are not random and exhibit a consistent pattern (e.g., all negative or all positive for certain variables), this might suggest that a relationship between variables is consistently being overestimated or underestimated by the model.
+
+3. Significance of the Discrepancies: Small discrepancies might not necessarily mean the model is poor. It's important to consider the scale of the variables and the magnitude of their covariances. Tiny differences might be inconsequential for large-scale variables.
+
+Findings:
+Some of these “raw” residuals look quite large in terms of a correlational scale; for example, that corresponding to drug store medication and inhalants. And the summary statistics for the normalised residuals show that the largest is far greater than the acceptable value of 2 and the smallest is rather less than the acceptable value of −2. Perhaps the overall message for the goodness-of-fit measures is that the fitted model does not provide an entirely adequate fit for the relationships between the observed variables.
+
+```{r}
+pathDiagram(druguse_sem, file = "druguse_sem", 
+             ignore.double = FALSE, edge.labels = "both", output.type = "graphics") 
+```
+
+7.4 Structural equation models
+Confirmatory factor analysis models are relatively simple examples of a more general framework for modelling latent variables and are known as either structural equation models or covariance structure models. In such models, observed variables are again assumed to be indicators of underlying latent variables, but now regression equations linking the latent variables are incorporated. Such models are fitted as described in Subsection 7.2.1. We shall illustrate these more complex models by way of a single example.
+
+
+7.4.1 Stability of alienation
+Data description: To illustrate the fitting of a structural equation model, we shall look at a study reported by Wheaton, Muthen, Alwin, and Summers (1977) concerned with the stability over time of attitudes such as alienation and the relationship of such attitudes to background variables such as education and occupation. For this purpose, data on attitude scales were collected from 932 people in two rural regions in Illinois at three time points, 1966, 1967, and 1971. Here we shall only consider the data from 1967 and 1971. Scores on the anomia scale and powerlessness scale were taken to be indicators of the assumed latent variable, alienation. A respondent’s years of schooling (education) and Duncan’s socioeconomic index were assumed to be indicators of a respondent’s socioeconomic status.
+
+
+The correlation matrix for the six observed variables is shown in Figure 7.4.
+
+
+Fig. 7.4. Correlation matrix of alienation data; values given are correlation coefficients ×100.
+```{r}
+a <- cov2cor(alienation)
+#It is used to convert a covariance matrix into a correlation matrix.
+
+ord <- order.dendrogram(as.dendrogram(hclust(dist(a))))
+#It is used to order the dendrogram object for plotting.
+
+panel.corrgram <-    
+     function(x, y, z, subscripts, at,  
+              level = 0.9, label = FALSE, ...)
+ {
+     require("ellipse", quietly = TRUE)
+     x <- as.numeric(x)[subscripts]   
+     y <- as.numeric(y)[subscripts]   
+     z <- as.numeric(z)[subscripts]   
+     zcol <- level.colors(z, at = at, col.regions = grey.colors, ...)
+     for (i in seq(along = z)) {
+         ell <- ellipse(z[i], level = level, npoints = 50,   
+                        scale = c(.2, .2), centre = c(x[i], y[i]))
+         panel.polygon(ell, col = zcol[i], border = zcol[i], ...)
+     }
+     if (label)  
+         panel.text(x = x, y = y, lab = 100 * round(z, 2), cex = 0.8,
+                    col = ifelse(z < 0, "white", "black"))
+ }
+#It is defined as a custom panel function for use in the levelplot. 
+#Requires the "ellipse" package for plotting ellipses.
+
+#Converts the x, y, and z arguments into numerical values, 
+#where z will represent the correlation coefficients.
+
+#Defines a color scheme zcol based on the correlation 
+#coefficients z using grey.colors.
+
+#Uses a loop to draw ellipses for each correlation coefficient 
+#with a level set at level (by default 0.9, which likely 
+#represents the confidence level for the correlation).
+
+#Optionally adds a label showing the rounded correlation 
+#coefficient; if the coefficient is negative, the label 
+#is white, otherwise, it's black.
+
+print(levelplot(a[ord, ord], at = do.breaks(c(-1.01, 1.01), 20),
+           xlab = NULL, ylab = NULL, colorkey = list(space = "top"),
+           scales = list(x = list(rot = 90)),
+           panel = panel.corrgram, label = TRUE))
+#The x and y axes are set according to the order of the dendrogram ord.
+
+#The colorkey is placed at the top.
+
+#The x and y labels are null, which means they are not shown.
+
+#Custom breaks are defined for the z-axis from -1 to 1, 
+#which is the range of possible correlation coefficients.
+
+#The panel function is set to panel.correlogram with labels turned on.
+```
+
+Interpretations:
+1.Correlation Values: Each cell of the correlogram contains the correlation coefficient between two variables, which are identified by the names on the x and y axes. The coefficients are usually between -1 and 1, where -1 indicates a perfect negative correlation, 0 indicates no correlation, and 1 indicates a perfect positive correlation.
+
+
+2. Colors and Ellipses: The color and fill of the ellipses correspond to the strength and direction of the correlation:
+
+
+3. Dark colors (toward the -1 end of the color key) suggest a strong negative correlation. Light colors (toward the +1 end of the color key) suggest a strong positive correlation. Neutral colors (around the middle of the color key) suggest a weak or no correlation. 
+
+
+4. Size of the Ellipses: The size of the ellipse indicates the strength of the correlation. A larger ellipse represents a stronger correlation, while a smaller ellipse (or narrow shape) indicates a weaker correlation.
+
+
+5. Overlapping Ellipses: This can occur when correlations between multiple pairs of variables are very similar.
+
+
+6. Diagonal: The diagonal is often left blank, as it would represent the correlation of each variable with itself, which is always 1.
+
+
+
+The scale of the three latent variables, SES, alienation 67, and alienation 71, are arbitrary and have to be fixed in some way to make the model identifiable. Here each is set to the scale of one of its indicator variables by fixing the corresponding regression coefficient to one. Consequently, the equations defining the model to be fitted are as follows:
+
+\begin{align*}
+\text{Education} &= \text{SES} + u_1, \\
+\text{SEI} &= \lambda_1\text{SES} + u_2, \\
+\text{Anomia67} &= \text{Alienation67} + u_3, \\
+\text{Powerlessness67} &= \lambda_2\text{Alienation67} + u_4, \\
+\text{Anomia71} &= \text{Alienation71} + u_5, \\
+\text{Powerlessness71} &= \lambda_3\text{Alienation71} + u_6, \\
+\text{Alienation67} &= \beta_1\text{SES} + u_7, \\
+\text{Alienation71} &= \beta_2\text{SES} + \beta_3\text{Alienation67} + u_8.
+\end{align*}
+
+
+
+In addition to the six regression coefficients in these equations, the model also has to estimate the variances of the eight error terms, $u_{1},..., u_{8}$, and the variance of the error term for the latent variables, SES. The necessary R code for fitting the model is
+```{r}
+mod <- c("SES           -> Educ, NA, 1",
+     "SES           -> SEI, lambda1, NA",
+     "Alienation67  -> Anomia67, NA, 1",
+     "Alienation67  -> Powles67, lambda2, NA",
+     "Alienation71  -> Anomia71, NA, 1",
+     "Alienation71  -> Powles71, lambda3, NA",
+     "SES           -> Alienation67, beta1, NA",
+     "SES           -> Alienation71, beta2, NA",
+     "Alienation67  -> Alienation71, beta3, NA",
+     "Educ         <-> Educ, theta1, NA",
+     "SEI          <-> SEI, theta2, NA",
+     "SES          <-> SES, delta0, NA",
+     "Anomia67     <-> Anomia67, theta3, NA",
+     "Powles67     <-> Powles67, theta4, NA",
+     "Anomia71     <-> Anomia71, theta5, NA",
+     "Powles71     <-> Powles71, theta6, NA",
+     "Alienation67 <-> Alienation67, delta1, NA",
+     "Alienation71 <-> Alienation71, delta2, NA")
+
+mod2 <- c(mod, "Anomia67 <-> Anomia71,psi,NA")
+```
+
+```{r}
+alienation_model <- specifyModel(text = mod)
+alienation_sem <- sem(alienation_model, alienation, 932)
+```
+
+```{r}
+summary(alienation_sem)
+```
+The value of the chi-square fit statistic is 71.532, which with 6 degrees of freedom suggests that the model does not fit well.
+
+
+Joreskog and Sorbom (1981) suggest that the model can be improved by allowing the measurement errors for anomia in 1967 and in 1971 to be correlated. Fitting such a model in R requires the addition of the following line to the code above:
+```{r}
+alienation_model2 <- specifyModel(text = mod2)
+
+alienation_sem2 <- sem(alienation_model2, alienation, 932)
+
+summary(alienation_sem2)
+
+```
+Findings: The chi-square fit statistic is now 6.359 with 5 degrees of freedom. Clearly the introduction of correlated measurement errors for the two measurements of anomia has greatly improved the fit of the model. However, Bentler (1982), in a discussion of this example, suggests that the importance of the structure remaining to be explained after fitting the original model is in practical terms very small, and Browne (1982) criticises the tendency to allow error terms to become correlated simply to obtain an improvement in fit unless there are sound theoretical reasons why particular error terms should be related.

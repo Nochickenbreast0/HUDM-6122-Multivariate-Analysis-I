@@ -1,0 +1,143 @@
+---
+title: "lab 9-3"
+output:
+  pdf_document: default
+  html_document: default
+date: "2024-04-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+6.6 Displaying clustering solutions graphically
+1. Plotting cluster solutions in the space of the first few principal components as illustrated earlier in this chapter is often a useful way to display clustering solutions, but other methods of displaying clustering solutions graphically are also available. 
+
+2. . Leisch (2010), for example, describes several graphical displays that can be used to visualise cluster analysis solutions. The basis of a number of these graphics is the shadow value, s(x), of each multivariate observation, x, defined as
+$$
+s(X) = \frac{2d(x, c(x))}{d(x, c(x)) + d(x, \tilde{c}(x))}
+$$
+where $d(x, c(x))$ is the distance of the observation x from the centroid of its own cluster and $d(x, \tilde{c}(x))$ is the distance of x from the second closest cluster centroid. If s(x) is close to zero, then the observation is close to its cluster centroid; if s(x) is close to one, then the observation is almost equidistant
+from the two centroids (a similar approach is used in defining silhouette plots, see Chapter 5). The average shadow value of all observations where cluster i is closest and cluster j is second closest can be used as a simple measure of cluster similarity,
+$$
+s_{ij} = \frac{1}{n_i} \sum_{x \in A_{ij}} s(X),
+$$
+where $n_{i}$ is the number of observations that are closest to the centroid of cluster i and $A_{ij}$ is the set of observations for which the centroid of cluster i is closest and the centroid of cluster j is second closest. The denominator of $s_{ij}$ is taken to be $n_{i}$ rather than $n_{ij}$ , the number of observations in the set $A_{ij}$, to prevent inducing large cluster similarity when nij is small and the set of observations consists of poorly clustered points with large shadow values.
+
+3. For a cluster solution derived from bivariate data, a neighbourhood graph can be constructed using the scatterplot of the two variables, and where two cluster centroids are joined if there exists at least one observation for which these two are closest, and second closest with the thickness of the joining lines being made proportional to the average value of the corresponding sij . When there are more than two variables in the data set, the neighbourhood graph can be constructed on some suitable projection of the data into two dimensions; for example, the first two principal components of the data could be used.
+
+The first example uses some two-dimensional data generated to contain three clusters. The neighbourhood graph for the k-means five-cluster solution from the application of k-means clustering is shown in Figure 6.17.
+Fig. 6.17. Neighbourhood plot of k-means five-cluster solution for bivariate data containing three clusters.
+```{r}
+library("flexclust")
+
+library("mvtnorm")
+
+set.seed(290875)
+
+x <- rbind(rmvnorm(n = 20, mean = c(0, 0), 
+                    sigma = diag(2)),
+            rmvnorm(n = 20, mean = c(3, 3), 
+                    sigma = 0.5 * diag(2)),
+            rmvnorm(n = 20, mean = c(7, 6), 
+                    sigma = 0.5 * (diag(2) + 0.25)))
+#Generates a dataset x which is a combination (via row binding rbind) 
+#of three separate multivariate normal distributions created by rmvnorm. 
+#Each of these distributions has 20 observations (n = 20), and they have 
+#different means specified by the mean argument. The covariance matrix 
+#sigma for each distribution is a scaled identity matrix, which means 
+#that the variables are independent and have equal variance.
+
+k <- cclust(x, k = 5, save.data = TRUE)
+
+plot(k, hull = FALSE, col = rep("black", 5), xlab = "x", ylab = "y")
+#The plot command (plot(k, hull = FALSE, col = rep("black", 5), 
+#xlab = "x", ylab = "y")) creates a plot of the clustering result. 
+#The hull = FALSE argument indicates that convex hulls should not be 
+#drawn around the clusters. The col argument specifies the color for 
+#the points; in this case, black for all five clusters. xlab and ylab
+#provide labels for the x and y axes, respectively.
+
+```
+Data Points: The various symbols (circles, crosses, triangles, etc.) represent individual data points. Each symbol type may correspond to a different group or cluster identified in the data.
+
+Clusters: The numbers from 1 to 5 are likely the labels for the five different clusters identified by the clustering algorithm.
+
+Lines: The lines connecting the numbers and symbols seem to indicate the path from the centroid (or some central point) of each cluster to the data points within that cluster.
+
+Interpretation: 
+1. Centroids: The numbers 1 to 5, circled, are probably the centroids of each cluster, representing the mean position of all the points within the cluster.
+
+2. Cluster Spread: The spread of symbols around each centroid indicates the distribution of data points within each cluster. A tighter cluster of symbols means that the data points within that cluster are more closely grouped together.
+
+3. Cluster Distribution: The relative distances between the clusters could imply how distinct or separated the clusters are from each other in terms of the underlying features represented on the x and y axes.
+
+The thicker lines joining the centroids of clusters 1 and 5 and clusters 2 and 4 strongly suggest that both pairs of clusters overlap to a considerable extent and are probably each divisions of a single cluster.
+
+For the second example we return to the pottery data previously met in the chapter. From the k means analysis, it is clear that these data contain three clusters; Figure 6.18 shows the neighbourhood plot for the k-means threecluster solution in the space of the first two principal components of the data. The three clusters are clearly visible in this plot.
+Fig. 6.18. Neighbourhood plot of k-means three-cluster solution for pottery data.
+```{r}
+
+k <- cclust(pots, k = 3, save.data = TRUE)
+
+plot(k, project = prcomp(pots), hull = FALSE, col = rep("black", 3),
+     xlab = "PC1", ylab = "PC2")  
+```
+Axes: The axes labeled PC1 and PC2 represent the first and second principal components, respectively. These are the directions in the data that explain the most variance, with PC1 explaining the most and PC2 the second most.
+
+Data Points: The various symbols (circles, crosses, and triangles) represent individual data points projected onto the first two principal components.
+
+Centroids: The numbers 1 to 3 circled are possibly the centroids of three different clusters within the data, determined through some clustering algorithm like k-means.
+
+Lines: The lines connecting the centroids to the symbols may indicate cluster assignments or the paths from the centroids to the closest data points in the PCA reduced space.
+
+Interpretation:
+
+1. Cluster Spread and Separation: The spread of the symbols around each centroid indicates how data points in each cluster are distributed along the principal components. The distance between centroids suggests how distinct the clusters are from each other in the reduced space.
+
+2. PCA Interpretation: The relative positioning of the points along PC1 and PC2 axes can give insights into which observations are similar or different in the context of the underlying variables that were transformed into these principal components.
+
+3. Clustering Interpretation: The clustering indicates which points are grouped together based on their similarities in the original higher-dimensional space. Clusters in PCA space can help visualize the natural groupings that may not be as evident in the original space.
+
+A further graphic for displaying clustering solutions is known as a stripes plot. This graphic is a simple but often effective way of visualising the distance of each point from its closest and second closest cluster centroids. For each cluster, k = 1, . . . , K, a stripes plot has a rectangular area that is vertically divided into K smaller rectangles, with each smaller rectangle, i, containing information about distances of the observations in cluster i from the centroid of that cluster along with the corresponding information about observations that have cluster i as their second closest cluster.
+
+
+```{r}
+set.seed(912345654)
+
+x <- rbind(matrix(rnorm(100, sd = 0.5), ncol= 2 ),
+           matrix(rnorm(100, mean =4, sd = 0.5), ncol = 2),
+           matrix(rnorm(100, mean =7, sd = 0.5), ncol = 2),
+           matrix(rnorm(100, mean =-1.0, sd = 0.7), ncol = 2),
+           matrix(rnorm(100, mean =-4.0, sd = 1.0), ncol = 2))
+
+c5 <- cclust(x, 5, save.data = TRUE)
+
+stripes(c5, type = "second", col = 1)
+
+
+```
+Findings: Figure 6.19 shows a stripes plot produced with that package flexclust (Leisch and Dimitriadou 2019) for a five cluster solution on a set of data generated to contain five relatively distinct clusters. Looking first at the rectangle for cluster one, we see that observations in clusters two and three have the cluster one centroid as their second closest. These observations form the two other stripes within the rectangle. Observations in cluster three are further away from cluster one, but a number of observations in cluster three have a distance to the centroid of cluster one similar to those observations that belong to cluster one. Overall though, the stripes plot in Figure 6.19 suggests that the five-cluster solution matches quite well the actual structure in the data. 
+
+
+
+Fig. 6.20. Stripes plot of k-means solution for artificial data.
+```{r}
+set.seed(912345654)
+x <- rbind(matrix(rnorm(100, sd = 2.5), ncol = 2),
+ matrix(rnorm(100, mean = 3, sd = 0.5), ncol = 2),
+ matrix(rnorm(100, mean = 5, sd = 0.5), ncol = 2),
+ matrix(rnorm(100, mean = -1.0, sd = 1.5), ncol = 2),
+ matrix(rnorm(100, mean = -4.0, sd = 2.0), ncol = 2))
+c5 <- cclust(x, 5, save.data = TRUE)
+stripes(c5, type = "second", col = 1)
+```
+Findings: The situation is quite different in Figure 6.20, where the stripes plot for the k-means five-group solution suggests that the clusters in this solution are not well separated, implying perhaps that the five-group solution is not appropriate for the data in this case.
+
+Fig. 6.21. Stripes plot of three-group k-means solution for pottery data.
+```{r}
+set.seed(15)
+c5 <- cclust(pots, k = 3, save.data = TRUE)
+stripes(c5, type = "second", col = "black")
+```
+Findings: Lastly, the stripes plot for the k-means three-group solution on the pottery data is shown in Figure 6.21. The graphic confirms the three-group structure of the data.

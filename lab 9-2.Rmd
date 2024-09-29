@@ -1,0 +1,334 @@
+---
+title: "lab 9-2"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+6.5 Model-based clustering
+1. The agglomerative hierarchical and k-means clustering methods described in the previous two sections are based largely on heuristic but intuitively reasonable procedures. But they are not based on formal models for cluster structure in the data, making problems such as deciding between methods, estimating the number of clusters, etc, particularly difficult. And, of course, without a reasonable model, formal inference is precluded. In practise, these may not be insurmountable objections to the use of either the agglomerative methods or k-means clustering because cluster analysis is most often used as an “exploratory” tool for data analysis. But if an acceptable model for cluster structure could be found, then the cluster analysis based on the model might give more persuasive solutions (more persuasive to statisticians at least).
+
+2. In this section, we describe an approach to clustering that postulates a formal statistical model for the population from which the data are sampled, a model that assumes that this population consists of a number of subpopulations (the “clusters”), each having variables with a different multivariate probability density function, resulting in what is known as a finite mixture density for the population as a whole.
+
+3. By using finite mixture densities as models for cluster analysis, the clustering problem becomes that of estimating the parameters of the assumed mixture and then using the estimated parameters to calculate the
+posterior probabilities of cluster membership. And determining the number of clusters reduces to a model selection problem for which objective procedures exist.
+
+4. Finite mixture densities often provide a sensible statistical model for the clustering process, and cluster analyses based on finite mixture models are also known as model-based clustering methods.
+
+5. Finite mixture modelling can be seen as a form of latent variable analysis, with “subpopulation” being a latent categorical variable and the latent classes being described by the different components of the mixture density; consequently, cluster analysis based on such models is also often referred to as latent class cluster analysis. 
+
+6.5.1 Finite mixture densities
+Finite mixture densities are a family of probability density functions of the form
+$$
+f(x; p, \theta) = \sum_{j=1}^{c} p_j g_j(x; \theta_j), \qquad(6.1)
+$$
+where x is a p-dimensional random variable, $$\mathbf{p}^{\top} = (p_1, p_2, \ldots, p_{c-1})$$, and
+$$\boldsymbol{\theta}^{\top} = (\theta_1^{\top}, \theta_2^{\top}, \ldots, \theta_c^{\top})$$, with the $p_{j}$ being known as mixing proportions and the $g_{j}$ , j = 1,..., c, being the component densities, with density $g_{j}$ being parameterized by $θ_{j}$.
+
+The mixing proportions are non-negative and are such that $\sum_{j=1}^{c} p_j = 1$. The number of components forming the mixture (i.e., the postulated number of clusters) is c.
+
+Having estimated the parameters of the assumed mixture density, observations can be associated with particular clusters on the basis of the maximum value of the estimated posterior probability
+
+
+$$
+\hat{P}(\text{cluster } j|x_i) = \frac{\hat{p}_j g_j(x_i; \hat{\theta}_j)}{f(x_i; \hat{p}, \hat{\theta})}, \quad j = 1, \ldots, c. \qquad (6.2)
+$$ 
+
+
+
+6.5.2 Maximum likelihood estimation in a finite mixture density with multivariate normal components
+Given a sample of observations $x_{1}, x_{2},..., x_{n}$, from the mixture density given in Equation (6.1) the log-likelihood function, l, is
+$$
+l(p, \theta) = \sum_{i=1}^{n} \ln f(x_i; p, \theta). \qquad (6.3)
+$$
+Estimates of the parameters in the density would usually be obtained as a solution of the likelihood equations
+$$
+\frac{\partial l(\phi)}{\partial \phi} = 0, \qquad (6.4)
+$$
+where $$\boldsymbol{\phi}^{\top} = (\mathbf{p}^{\top}, \boldsymbol{\theta}^{\top})$$.
+
+In the case of finite mixture densities, the likelihood function is too complicated to employ the usual methods for its maximisation; for example, an iterative Newton–Raphson method that approximates the gradient vector of the log-likelihood function $l(\phi)$ by a linear Taylor series expansion.
+
+Consequently, the required maximum likelihood estimates of the parameters in a finite mixture model have to be computed in some other way. In the case of a mixture in which the jth component density is multivariate normal
+with mean vector $\mu_j$ and covariance matrix $\Sigma_j$, it can be shown that the application of maximum likelihood results
+in the series of equations
+$$
+\hat{p}_j = \frac{1}{n} \sum_{i=1}^{n} \hat{P}(j|x_i), \qquad (6.5)
+$$
+$$
+\hat{\mu}_j = \frac{1}{n\hat{p}_j} \sum_{i=1}^{n} x_i \hat{P}(j|x_i), \qquad (6.6)
+$$
+$$
+\hat{\Sigma}_j = \frac{1}{n} \sum_{i=1}^{n} (x_i - \hat{\mu}_j)(x_i - \hat{\mu}_j)^{\top} \hat{P}(j|x_i), \qquad (6.7)
+$$
+where $$\hat{P}(j|x_i)$$ s are the estimated posterior probabilities given in equation (6.2).
+
+Hasselblad (1966, 1969), Wolfe (1970), and Day (1969) all suggest an iterative scheme for solving the likelihood equations given above that involves finding initial estimates of the posterior probabilities given initial estimates of the parameters of the mixture and then evaluating the right-hand sides of Equations 6.5 to 6.7 to give revised values for the parameters. From these, new estimates of the posterior probabilities are derived, and the procedure is repeated until some suitable convergence criterion is satisfied. There are potential problems with this process unless the component covariance matrices are constrained in some way; for example, it they are all assumed to be the same.
+
+This procedure is a particular example of the iterative expectation maximization (EM) algorithm. 
+
+In estimating parameters in a mixture, it is the “labels” of the component density from which an observation arises that are missing. As an alternative to the EM algorithm, Bayesian estimation methods using the Gibbs sampler or other Monte Carlo Markov Chain (MCMC) methods are becoming increasingly popular.
+
+Fraley and Raftery (2002, 2007) developed a series of finite mixture density models with multivariate normal component densities in which they allow some, but not all, of the features of the covariance matrix (orientation, size, and shape–discussed later) to vary between clusters while constraining others to be the same. These new criteria arise from considering the reparameterization of the covariance matrix $\Sigma_j$ in terms of its eigenvalue description
+$$
+\Sigma_j = D_j \Lambda_j D_j^{\top}, \qquad(6.8)
+$$
+
+where $D_{j}$ is the matrix of eigenvectors and $\Lambda_j$ is a diagonal matrix with the eigenvalues of $\Sigma_j$ on the diagonal (this is simply the usual principal components transformation–see Chapter 3). The orientation of the principal components of $\Sigma_j$ is determined by $D_{j}$ , whilst $\Lambda_j$ specifies the size and shape of the density contours. Specifically, we can write $\Lambda_j = \lambda_j A_j$, where $\Lambda_j$ is the largest eigenvalue of $\Sigma_j$ and $$A_j = \text{diag}(1, \alpha_2, \ldots, \alpha_p)$$ contains the eigenvalue ratios after division by $\lambda_j$ . Hence $\lambda_j$ controls the size of the jth cluster and $A_{j}$ its shape. (Note that the term “size” here refers to the volume occupied in space, not the number of objects in the cluster.)
+
+In two dimensions, the parameters would reflect, for each cluster, the correlation between the two variables,
+and the magnitudes of their standard deviations.
+
+The models make up what Fraley and Raftery (2003, 2007) term the “MCLUST” family of mixture models. The mixture likelihood approach based on the EM algorithm for parameter estimation is implemented in the Mclust() function in the R package mclust and fits the models in the MCLUST family described in Table 6.4.
+
+Table 6.4: mclust family of mixture models. Model names describe model restrictions of volume $\lambda_j$, shape $A_{j}$, and orientation $D_{j}$ , V = variable, parameter unconstrained, E= equal, parameter constrained, I = matrix constrained to identity matrix.
+```{r}
+library(knitr)
+include_graphics("E:/HUDM 6122/table6.4.png")
+```
+
+To illustrate the use of the finite mixture approach to cluster analysis, we will apply it to data that arise from a study of what gastroenterologists in Europe tell their cancer patients.
+
+A questionnaire was sent to about 600 gastroenterologists in 27 European countries (the study took place before the recent changes in the political map of the continent) asking what they would tell a patient with newly diagnosed cancer of the colon, and his or her spouse, about the diagnosis. The respondent gastroenterologists were asked to read a brief case history and then to answer six questions with a yes/no answer. The questions were as follows:
+
+
+Q1: Would you tell this patient that he/she has cancer, if he/she asks no questions?
+
+
+Q2: Would you tell the wife/husband that the patient has cancer (In the patient’s absence)?
+
+
+Q3: Would you tell the patient that he or she has a cancer, if he or she directly asks you to disclose the diagnosis. (During surgery the surgeon notices several small metastases in the liver.)
+
+
+Q4: Would you tell the patient about the metastases (supposing the patient asks to be told the results of the operation)?
+
+
+Q5: Would you tell the patient that the condition is incurable? 
+
+
+Q6: Would you tell the wife or husband that the operation revealed metastases?
+
+```{r}
+cnt <- c("Iceland", "Norway", "Sweden", "Finland", "Denmark", "UK", "Eire",
+          "Germany", "Netherlands", "Belgium", "Switzerland", "France", "Spain",
+          "Portugal", "Italy", "Greece", "Yugoslavia", "Albania", "Bulgaria", "Romania",
+          "Hungary", "Czechia", "Slovakia", "Poland", "CIS", "Lithuania", "Latvia", "Estonia")
+
+thomson <- expand.grid(answer = factor(c("no", "yes")),
+                        question = factor(paste("Q", 1:6, sep = "")),
+                        country = factor(cnt, levels = cnt))  
+#Generates a data frame thomson using expand.grid which is a 
+#function to create all possible combinations of the elements 
+#of the vectors passed to it. Here, it creates combinations of 
+#answer (with levels "no" and "yes"), question (with factors 
+#created from "Q1" to "Q6"), and country (with the countries 
+#specified in cnt).
+
+thomson$Freq <- c(
+ 0, 5, 0, 5, 0, 4, 0, 5, 0, 5, 0, 5,
+ 1, 6, 1, 5, 0, 6, 0, 5, 0, 4, 1, 4,
+ 0, 11, 4, 7, 0, 7, 0, 11, 5, 5, 3, 6,
+ 0, 6, 2, 4, 0, 6, 0, 6, 1, 5, 2, 4,
+ 1, 12, 4, 9, 0, 12, 3, 9, 7, 4, 6, 7,
+ 7, 12, 2, 16, 0, 20, 1, 19, 9, 10, 0, 17,
+ 0, 1, 1, 2, 0, 3, 2, 0, 2, 0, 0, 3,
+ 0, 14, 0, 13, 0, 13, 2, 12, 11, 2, 1, 13,
+ 0, 8, 0, 8, 0, 8, 1, 7, 2, 5, 1, 7,
+ 2, 0, 0, 2, 0, 2, 1, 1, 2, 0, 0, 2,
+ 0, 5, 0, 5, 0, 4, 2, 2, 5, 0, 0, 4,
+ 7, 3, 1, 7, 3, 5, 8, 2, 10, 0, 1, 7,
+ 11, 1, 0, 12, 2, 8, 5, 6, 11, 0, 0, 11,
+ 5, 1, 0, 6, 2, 4, 3, 3, 6, 0, 0, 6,
+ 8, 7, 0, 15, 1, 13, 9, 6, 13, 2, 0, 15,
+ 7, 1, 0, 8, 3, 5, 7, 1, 8, 0, 0, 7,
+ 11, 4, 0, 15, 7, 8, 11, 4, 15, 0, 0, 14,
+ 3, 2, 2, 3, 3, 2, 3, 2, 3, 3, 2, 3,
+ 3, 0, 0, 3, 2, 1, 3, 0, 3, 0, 0, 3,
+ 7, 0, 0, 6, 6, 1, 6, 1, 6, 1, 0, 7,
+ 4, 1, 0, 5, 1, 4, 5, 0, 5, 0, 0, 5,
+ 18, 2, 0, 20, 17, 3, 20, 0, 20, 0, 0, 20,
+ 13, 0, 1, 14, 14, 0, 16, 0, 13, 0, 15, 0,
+ 18, 0, 0, 19, 13, 5, 17, 2, 17, 0, 0, 19,
+ 7, 0, 1, 6, 5, 2, 7, 0, 7, 0, 1, 6,
+ 8, 0, 0, 8, 8, 0, 8, 0, 8, 0, 0, 8,
+ 5, 0, 0, 5, 5, 0, 5, 0, 5, 0, 0, 5,
+ 2, 2, 0, 3, 0, 3, 3, 0, 3, 0, 0, 3)
+
+ttab <- xtabs(Freq ~ country + answer + question, data = thomson)
+#Creates a contingency table ttab with xtabs using frequency data 
+#from thomson data frame, classified by country and answer for each question.
+
+#The xtabs function in R creates a contingency table from data. 
+#Essentially, it's a way to tabulate and cross-classify data 
+#so that you can see the frequency of different combinations 
+#of factor levels.
+
+thomsonprop <- prop.table(ttab, c(1,3))[,"yes",]
+
+plot(1:(22 * 6), rep(-1, 22 * 6), 
+      ylim = c(-nlevels(thomson$country), -1), type = "n",
+      axes = FALSE, xlab = "", ylab = "")
+
+for (q in 1:6) {   
+    tmp <- ttab[,,q]
+    xstart <- (q - 1) * 22 + 1
+     y <- -rep(1:nrow(tmp), rowSums(tmp))
+     x <- xstart + unlist(sapply(rowSums(tmp), function(i) 1:i))
+     pch <- unlist(apply(tmp, 1, function(x) c(rep(19, x[2]), rep(1, x[1]))))
+     points(x, y, pch = pch)
+  }
+#Uses a loop over the number of questions (1 to 6) to:
+#Extract subtables from the contingency table for each question.
+#Calculate the starting x-position for plotting based on the question number.
+#Calculate y-positions by negating the cumulative row sums 
+#(to stagger the points vertically).
+#Create x-values to stagger horizontally across questions.
+#Plots the points with the points function, using different 
+#plotting characters (pch) for each country within each question.
+
+axis(2, at = -(1:nlevels(thomson$country)), labels = levels(thomson$country),
+        las = 2, tick = FALSE, line = 0)
+#axis(2, ...): This adds an axis on the side of the 
+#plot specified by the first argument, which is 2 in 
+#this case. This corresponds to the left-hand side of 
+#the plot (the y-axis).
+
+#at = (-1:nlevels(thomson$country)): This specifies the points 
+#at which tick marks and labels are to be placed on the axis. 
+#The sequence is generated from -1 down to the negative number 
+#of levels in thomson$country, which means it creates a set of 
+#negative positions. This is an unusual use of axis and may be 
+#specific to the plot being created, possibly a dot plot or similar.
+
+#labels = levels(thomson$country): This provides the labels for the 
+#tick marks on the axis. They are set to the levels of the country 
+#factor in the thomson data frame, meaning each country's name will 
+#be used as a label on the y-axis.
+
+#las = 2: This argument sets the orientation of the axis labels. 
+#A value of 2 means that the labels are perpendicular to the axis.
+
+#tick = FALSE: This indicates that the tick marks themselves should not be drawn.
+
+#line = 0: This sets which line of the margin the axis labels will
+#be drawn on. A value of 0 means the labels will be drawn right next to the axis.
+
+mtext(text = paste("Question", 1:6), 3, at = 22 * (0:5), adj = 0)
+```
+Interpretation: 
+Countries: The y-axis lists various countries, indicating that the data are separated by nation.
+
+Questions: Along the top, the columns are labeled from "Question 1" to "Question 6", suggesting that the data represent responses to these questions for each country.
+
+Dots: Each dot represents a certain number of responses. The pattern of the dots in each column for a country provides a visual representation of the response distribution for that question.
+
+Color/Style of Dots: The dots are either filled or hollow. If the code seen earlier corresponds to this plot, the filled dots might represent "yes" answers and hollow dots represent "no" answers, or vice versa.
+
+Stacking of Dots: The dots are staggered horizontally to prevent overlap, allowing for all the data points to be visible. This helps in visualizing the quantity of each response type without them obscuring each other.
+
+Comparisons Across Countries and Questions: By scanning vertically, you can compare the response distribution across countries for a single question. Horizontally, you can compare the responses for a single country across different questions.
+
+Data Density and Trends: Clusters of dense dots indicate a high frequency of a particular response for that question in the country. The horizontal spread might indicate the magnitude or count of the responses.
+
+
+Applying the finite mixture approach to the proportions of ‘yes’ answers for each question for each country computed from these data using the R code utilizing functionality offered by package mclust
+```{r}
+library("mclust")
+(mc <- Mclust(thomsonprop))
+```
+Interpretation: 
+Model fitting: The Mclust function was called with thomsonprop as the input data, and it completed the fitting process, as indicated by the progress bar.
+
+Model type: The text '(VEV,2)' suggests that a model with variable volume, equal shape, and varying orientation (VEV) was selected, with 2 components (clusters).
+
+Available components: The output lists the components that are available in the fitted model object (named mc). These components can be extracted and analyzed further. Here are some of them explained:
+
+"call": The matched call that was used to fit the model.
+"data": The dataset that was used for fitting the model.
+"modelName": The name of the fitted model.
+"n": The number of observations in the data.
+"d": The dimensionality of the data.
+"G": The number of clusters or groups.
+"BIC": The Bayesian Information Criterion for the model, which can be used for model selection.
+"loglik": The log-likelihood of the model.
+"df": Degrees of freedom of the model.
+"icl": The Integrated Completed Likelihood, which is another criterion for model selection.
+"hypvol": The hyper-volume of the clusters.
+"parameters": The estimated parameters for the mixture model.
+"z": The soft classification of data to clusters.
+"classification": The hard classification of data to clusters.
+"uncertainty": The uncertainty associated with the classification.
+
+We can first examine the resulting plot of BIC values shown in Figure 6.15. In this diagram, the plot symbols and abbreviations refer to different model assumptions about the shapes of clusters as given in Table 6.4.
+Fig. 6.15. BIC values for gastroenterologists questionnaire.
+```{r}
+plot(mc, thomsonprop, what = "BIC", col = "black")
+```
+Findings:
+x-axis ("number of components"): This represents the number of clusters or components used in the model. Each point along the x-axis corresponds to a model with that many clusters.
+
+y-axis ("BIC"): The BIC is a criterion for model selection among a finite set of models; the model with the lowest BIC is generally preferred. It is based on the likelihood function and penalizes complex models to prevent overfitting.
+
+Points and Lines: Each point represents the BIC value for a specific model, and the lines connect models with the same covariance structure but a different number of components.
+
+Symbols: Different symbols represent different covariance structures for the components of the mixture model. For example, "EII" might represent a model where each cluster has equal volume, equal shape, and equal orientation, while "VVI" would represent a model with variable volume and variable shape, and so on.
+
+Interpretation:
+1. Models with lower BIC values are generally better. However, we want to balance model simplicity with goodness of fit.
+
+2. From the plot, we can see which number of components and which covariance structures yield the lowest BIC values, suggesting they might be the best models for the data.
+
+3. The plot also shows how BIC values tend to change as the number of components increases. Typically, as more components are added, the fit of the model to the data improves (up to a point), but so does the complexity of the model, which BIC penalizes.
+
+4. It looks like some models with 2, 3, 4, and 8 components have particularly low BIC values, indicating that these might be models of interest.
+
+Fig. 6.16. Model-based clustering into three clusters for gastroenterologists questionnaire data. Dark circles indicate a ‘yes’, open circles a ‘no’.
+```{r}
+cl <- mc$classification
+
+nm <- unlist(sapply(1:3, function(i) names(cl[cl == i])))
+#This line creates a list of names (or indices) for each cluster. 
+#For each cluster number from 1 to 3, it selects the names of the 
+#elements in cl that are classified into that cluster. The sapply 
+#function applies the inner function to each number from 1 to 3, 
+#and unlist flattens the result into a single vector. If cl does 
+#not have names, this line might not work as expected and would 
+#need to be adjusted.
+
+ttab <- ttab[nm,,]
+#This line subsets the contingency table ttab to include only 
+#the rows specified in nm. This means that ttab is being reordered 
+#or filtered to match the classification order given by the model mc.
+
+plot(1:(22 * 6), rep(-1, 22 * 6), 
+      ylim = c(-nlevels(thomson$country), -1), type = "n",
+      axes = FALSE, xlab = "", ylab = "")
+
+for (q in 1:6) {   
+     tmp <- ttab[,,q]
+     xstart <- (q - 1) * 22 + 1
+     y <- -rep(1:nrow(tmp), rowSums(tmp))
+     x <- xstart + unlist(sapply(rowSums(tmp), function(i) 1:i))
+     pch <- unlist(apply(tmp, 1, function(x) c(rep(19, x[2]), rep(1, x[1]))))
+     points(x, y, pch = pch)
+ }
+
+axis(2, at = -(1:nlevels(thomson$country)), labels = dimnames(ttab)[[1]],
+       las = 2, tick = FALSE, line = 0)
+
+mtext(text = paste("Question", 1:6), 3, at = 22 * (0:5), adj = 0)
+
+abline(h = -cumsum(table(cl))[-3] - 0.5, col = "grey")
+
+text(-c(0.75, 0.75, 0.75), -cumsum(table(cl)) + table(cl)/2,
+      label = paste("Cluster", 1:3), srt = 90, pos = 1)
+
+```
+Findings: The BIC criterion selects model VEV (ellipsoidal, equal shape) and three clusters as the optimal solution. The three-cluster solution is illustrated graphically in Figure 6.16. The first cluster consists of countries in which the large majority of respondents gave “yes” answers to questions 1, 2, 3, 4, and 6 and about half also gave a “yes” answer to question 5. This cluster includes all the Scandinavian countries the UK,  Iceland, Germany, the Netherlands, and Switzerland. In the second cluster, the majority of respondents answer “no” to questions 1, 4, and 5 and “yes” to questions 2, 3 and 6; in these countries it appears that the clinicians do not mind giving bad news to the spouses of patients but not to the patients themselves unless they are directly asked by the patient about hispr her condition. This cluster contains Catholic countries such as Spain, Portugal, and Italy. In cluster three, the large majority of respondents answer “no” to questions 1, 3, 4, and 5 and again a large majority answer “yes” to questions 2 and 6. In these countries, very few clinicians appear to be willing to give the patient bad news even if asked directly by the patient about his or her condition. 

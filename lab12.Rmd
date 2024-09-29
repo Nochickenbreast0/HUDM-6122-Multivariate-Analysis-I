@@ -1,0 +1,91 @@
+---
+title: "lab12"
+output:
+  pdf_document: default
+  html_document: default
+date: "2024-04-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+8.1
+
+
+Wide Format Example in Base R
+
+
+Imagine we have a dataset of three subjects who have been measured at three different time points. In a wide format, each subject would be a row, and each measurement time point would be a column.
+```{r}
+# Creating a wide format data frame
+subjects <- c(1, 2, 3)
+time1 <- c(5, 4, 7)
+time2 <- c(6, 5, 8)
+time3 <- c(7, 6, 9)
+
+wide_data <- data.frame(subjects, time1, time2, time3)
+print(wide_data)
+```
+Converting from Wide to Long Format in Base R
+
+
+To convert from wide to long format, we can use the following:
+```{r}
+# Convert the wide data frame to long format
+long_data <- reshape(wide_data, 
+                     varying = c("time1", "time2", "time3"), 
+                     v.names = "measurement",
+                     timevar = "time",
+                     idvar = "subjects",
+                     direction = "long")
+print(long_data)
+```
+In this reshape function:
+varying: Lists the columns in wide_data that vary by time point.
+v.names: Names the measurement variable in the long format.
+timevar: Names the variable that will record the time point in the long format.
+idvar: Identifies the variable that identifies each subject.
+direction: Specifies the direction of the reshape, "long" for wide to long.
+
+
+The resulting long_data will have one row for each subject and time point, with the measurements in a single column.
+
+
+8.4: Dropout Mechanisms
+
+1. MCAR (Missing Completely at Random)
+```{r}
+set.seed(123) # for reproducibility
+data_mcar <- data.frame(
+  x = rnorm(100), # some continuous variables
+  y = rnorm(100)
+)
+# Introduce missing values completely at random
+data_mcar$x[sample(1:100, 10)] <- NA
+data_mcar$y[sample(1:100, 10)] <- NA
+```
+
+
+2. MAR (Missing at Random)
+```{r}
+set.seed(123)
+data_mar <- data.frame(
+  x = rnorm(100),
+  y = rnorm(100),
+  group = sample(LETTERS[1:2], 100, replace = TRUE) # categorical group
+)
+# Introduce missing values depending on the group (but not on Y itself)
+data_mar$x[data_mar$group == "A"] <- ifelse(runif(sum(data_mar$group == "A")) < 0.2, NA, data_mar$x[data_mar$group == "A"])
+data_mar$y[data_mar$group == "B"] <- ifelse(runif(sum(data_mar$group == "B")) < 0.2, NA, data_mar$y[data_mar$group == "B"])
+```
+
+3.3. MNAR (Missing Not at Random or Non-Ignorable)
+```{r}
+set.seed(123)
+data_mnar <- data.frame(
+  x = rnorm(100),
+  y = rbinom(100, 1, 0.5) # some binary variable
+)
+# Introduce missing values in x depending on the value of y
+data_mnar$x[data_mnar$y == 1] <- ifelse(runif(sum(data_mnar$y == 1)) < 0.3, NA, data_mnar$x[data_mnar$y == 1])
+```
